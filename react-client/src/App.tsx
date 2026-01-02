@@ -10,6 +10,7 @@ import CitizenDashboard from "@/pages/citizen/index";
 import CitizenProfile from "@/pages/citizen/profile";
 import CitizenApplications from "@/pages/citizen/applications";
 import CitizenGrievances from "@/pages/citizen/grievances";
+import BloDashboard from "@/pages/blo/index";
 
 function App() {
   return (
@@ -26,6 +27,9 @@ function App() {
       <Route element={<CitizenProfile />} path="/citizen/profile" />
       <Route element={<CitizenApplications />} path="/citizen/applications" />
       <Route element={<CitizenGrievances />} path="/citizen/grievances" />
+
+      {/* BLO Portal Routes */}
+      <Route element={<BloDashboard />} path="/blo" />
     </Routes>
   );
 }
