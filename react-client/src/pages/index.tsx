@@ -1,6 +1,7 @@
 import { Button } from "@heroui/button";
 import { Card, CardHeader } from "@heroui/card";
 import { Image } from "@heroui/image";
+import { Link } from "react-router-dom";
 
 import DefaultLayout from "@/layouts/default";
 
@@ -35,10 +36,12 @@ export default function IndexPage() {
 
           <div className="flex flex-wrap gap-4">
             <Button
+              as={Link}
               className="font-semibold px-8 shadow-xl shadow-primary/20"
               color="primary"
               radius="full"
               size="lg"
+              to="/login"
             >
               Access Voter Portal
             </Button>

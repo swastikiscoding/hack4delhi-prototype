@@ -34,9 +34,7 @@ export default function CitizenGrievances() {
               variant="bordered"
             >
               {categories.map((category) => (
-                <SelectItem key={category.key} value={category.key}>
-                  {category.label}
-                </SelectItem>
+                <SelectItem key={category.key}>{category.label}</SelectItem>
               ))}
             </Select>
 

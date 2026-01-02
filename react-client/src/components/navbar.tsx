@@ -1,11 +1,11 @@
 import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
 import {
   Navbar as HeroUINavbar,
   NavbarBrand,
   NavbarContent,
   NavbarItem,
 } from "@heroui/navbar";
+import { Link as RouterLink } from "react-router-dom";
 
 import { ThemeSwitch } from "@/components/theme-switch";
 
@@ -18,11 +18,7 @@ export const Navbar = () => {
     >
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand className="gap-3 max-w-fit">
-          <Link
-            className="flex justify-start items-center gap-2"
-            color="foreground"
-            href="/"
-          >
+          <RouterLink className="flex justify-start items-center gap-2" to="/">
             {/* Simple Shield/Check Logo SVG */}
             <svg
               className="text-primary"
@@ -50,7 +46,7 @@ export const Navbar = () => {
             <p className="font-bold text-inherit tracking-tight">
               Unified Electoral Roll
             </p>
-          </Link>
+          </RouterLink>
         </NavbarBrand>
       </NavbarContent>
 
@@ -63,8 +59,10 @@ export const Navbar = () => {
         </NavbarItem>
         <NavbarItem className="hidden md:flex">
           <Button
+            as={RouterLink}
             className="font-semibold bg-primary text-primary-foreground shadow-lg shadow-primary/30"
             radius="full"
+            to="/login"
             variant="solid"
           >
             Citizen Login

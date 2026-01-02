@@ -11,6 +11,9 @@ import CitizenProfile from "@/pages/citizen/profile";
 import CitizenApplications from "@/pages/citizen/applications";
 import CitizenGrievances from "@/pages/citizen/grievances";
 import BloDashboard from "@/pages/blo/index";
+import EroDashboard from "@/pages/ero/index";
+import StateEcDashboard from "@/pages/state-ec/index";
+import EciDashboard from "@/pages/eci/index";
 
 function App() {
   return (
@@ -30,6 +33,15 @@ function App() {
 
       {/* BLO Portal Routes */}
       <Route element={<BloDashboard />} path="/blo" />
+
+      {/* ERO Portal Routes */}
+      <Route element={<EroDashboard />} path="/ero" />
+
+      {/* State EC Portal Routes */}
+      <Route element={<StateEcDashboard />} path="/state-ec" />
+
+      {/* ECI Portal Routes */}
+      <Route element={<EciDashboard />} path="/eci" />
     </Routes>
   );
 }
