@@ -1,0 +1,10 @@
+# Environment variables
+.env
+
+# Foundry build artifacts
+out/
+cache/
+broadcast/
+
+# OS / editor junk
+.DS_Store
