@@ -294,82 +294,204 @@ export default function IndexPage() {
       </section>
 
       {/* Feature Showcase Section */}
-      <section className="py-24">
-        <div className="flex flex-col gap-24">
-          {/* Feature 1 */}
-          <div className="flex flex-col md:flex-row items-center gap-12">
-            <div className="w-full md:w-1/2">
-              <div className="relative rounded-2xl overflow-hidden shadow-xl">
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col gap-32">
+          {/* Feature 1: Inclusive Democracy */}
+          <div className="flex flex-col md:flex-row items-center gap-16">
+            <div className="w-full md:w-1/2 relative group">
+              <div className="absolute -inset-4 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-3xl opacity-20 blur-2xl group-hover:opacity-30 transition-opacity duration-500" />
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10">
                 <Image
-                  alt="Indian voters in queue"
-                  className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
-                  src="https://images.unsplash.com/photo-1599368150419-856d112a929c?q=80&w=800&auto=format&fit=crop"
+                  alt="Indian woman showing inked finger"
+                  className="w-full h-[500px] object-cover hover:scale-105 transition-transform duration-700"
+                  src="https://images.unsplash.com/photo-1541872703-74c5963631df?q=80&w=800&auto=format&fit=crop"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-8 left-8 text-white">
+                  <p className="font-bold text-2xl mb-2">Every Vote Counts</p>
+                  <p className="text-white/80 text-sm max-w-xs">
+                    Empowering the largest democracy in the world with
+                    accessible technology.
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="w-full md:w-1/2 flex flex-col gap-6">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <span className="font-bold text-xl">1</span>
+
+            <div className="w-full md:w-1/2 flex flex-col gap-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 w-fit">
+                <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                <span className="text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+                  Inclusivity First
+                </span>
               </div>
-              <h3 className="text-3xl font-bold">Inclusive Democracy</h3>
-              <p className="text-lg text-default-500 leading-relaxed">
-                Empowering every citizen to participate in the democratic
-                process. Our system ensures that no eligible voter is left
-                behind, regardless of their location or migration status.
+
+              <h3 className="text-4xl md:text-5xl font-bold leading-tight">
+                Democracy that <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600">
+                  Reaches Everyone
+                </span>
+              </h3>
+
+              <p className="text-xl text-default-500 leading-relaxed">
+                Our system ensures that no eligible voter is left behind.
+                Whether you are a migrant worker, a senior citizen, or living in
+                a remote area, your right to vote is secured.
               </p>
-              <ul className="flex flex-col gap-3">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                 {[
-                  "Remote Registration",
-                  "Easy Verification",
-                  "Multi-language Support",
+                  {
+                    title: "Remote Registration",
+                    desc: "Register from anywhere",
+                  },
+                  { title: "Multi-language", desc: "12+ Regional languages" },
+                  { title: "Easy Verification", desc: "AI-powered KYC" },
+                  { title: "Accessibility", desc: "Screen reader friendly" },
                 ].map((item, i) => (
-                  <li
+                  <div
                     key={i}
-                    className="flex items-center gap-2 text-default-600"
+                    className="flex items-start gap-4 p-4 rounded-2xl bg-default-50 border border-default-100 hover:border-orange-500/30 transition-colors"
                   >
-                    <svg
-                      className="w-5 h-5 text-success"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M5 13l4 4L19 7"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                    {item}
-                  </li>
+                    <div className="mt-1 p-2 rounded-lg bg-orange-500/10 text-orange-600">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M5 13l4 4L19 7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground">
+                        {item.title}
+                      </h4>
+                      <p className="text-sm text-default-500">{item.desc}</p>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           </div>
 
-          {/* Feature 2 (Reversed) */}
-          <div className="flex flex-col md:flex-row-reverse items-center gap-12">
-            <div className="w-full md:w-1/2">
-              <div className="relative rounded-2xl overflow-hidden shadow-xl">
+          {/* Feature 2: Efficient Administration */}
+          <div className="flex flex-col md:flex-row-reverse items-center gap-16">
+            <div className="w-full md:w-1/2 relative group">
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-3xl opacity-20 blur-2xl group-hover:opacity-30 transition-opacity duration-500" />
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10">
                 <Image
-                  alt="Election officials"
-                  className="w-full h-[400px] object-cover hover:scale-105 transition-transform duration-500"
-                  src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=800&auto=format&fit=crop"
+                  alt="Digital Dashboard"
+                  className="w-full h-[500px] object-cover hover:scale-105 transition-transform duration-700"
+                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/20 to-transparent mix-blend-multiply" />
+
+                {/* Floating UI Element Mockup */}
+                <div className="absolute bottom-8 right-8 bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-2xl max-w-xs shadow-2xl">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-white font-bold">System Status</p>
+                      <p className="text-green-400 text-xs">
+                        All Systems Operational
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full w-[85%] bg-green-500 rounded-full" />
+                    </div>
+                    <div className="flex justify-between text-xs text-white/60">
+                      <span>Uptime</span>
+                      <span>99.99%</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="w-full md:w-1/2 flex flex-col gap-6">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <span className="font-bold text-xl">2</span>
+
+            <div className="w-full md:w-1/2 flex flex-col gap-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 w-fit">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                  Next-Gen Admin
+                </span>
               </div>
-              <h3 className="text-3xl font-bold">Efficient Administration</h3>
-              <p className="text-lg text-default-500 leading-relaxed">
-                Streamlined processes for Election Registration Officers.
-                Automated deduplication and real-time updates reduce workload
-                and errors.
+
+              <h3 className="text-4xl md:text-5xl font-bold leading-tight">
+                Streamlined <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">
+                  Election Management
+                </span>
+              </h3>
+
+              <p className="text-xl text-default-500 leading-relaxed">
+                Empowering Election Registration Officers with AI-driven tools
+                for deduplication, real-time analytics, and seamless roll
+                updates. Reduce workload and eliminate errors.
               </p>
-              <Button className="w-fit" color="primary" variant="flat">
-                Read Documentation
+
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-default-50 border-l-4 border-blue-500">
+                  <div>
+                    <h4 className="font-bold text-lg">
+                      Automated Deduplication
+                    </h4>
+                    <p className="text-default-500">
+                      AI detects and merges duplicate entries instantly.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-default-50 border-l-4 border-cyan-500">
+                  <div>
+                    <h4 className="font-bold text-lg">Real-time Analytics</h4>
+                    <p className="text-default-500">
+                      Live dashboards for voter turnout and demographics.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                className="w-fit font-semibold mt-4"
+                color="primary"
+                endContent={
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                }
+                size="lg"
+              >
+                View Admin Features
               </Button>
             </div>
           </div>
