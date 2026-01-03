@@ -36,6 +36,7 @@
     "@tailwindcss/vite": "4.1.11",
     "axios": "^1.13.2",
     "clsx": "2.1.1",
+    "ethers": "^6.16.0",
     "framer-motion": "11.18.2",
     "lineicons-react": "^2.0.0",
     "react": "18.3.1",

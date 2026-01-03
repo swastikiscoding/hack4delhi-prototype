@@ -14,6 +14,7 @@ import BloDashboard from "@/pages/blo/index";
 import EroDashboard from "@/pages/ero/index";
 import StateEcDashboard from "@/pages/state-ec/index";
 import EciDashboard from "@/pages/eci/index";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 function App() {
   return (
@@ -41,7 +42,14 @@ function App() {
       <Route element={<StateEcDashboard />} path="/state-ec" />
 
       {/* ECI Portal Routes */}
-      <Route element={<EciDashboard />} path="/eci" />
+      <Route
+        element={
+          <ProtectedRoute>
+            <EciDashboard />
+          </ProtectedRoute>
+        }
+        path="/eci"
+      />
     </Routes>
   );
 }

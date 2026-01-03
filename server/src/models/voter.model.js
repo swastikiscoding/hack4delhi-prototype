@@ -1,18 +1,22 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import pkg from 'js-sha3';
+import pkg from "js-sha3";
+import { STATE_NUMBER_MAP } from "./statemap.js";
+
 const { keccak256 } = pkg;
 
 const voterSchema = new mongoose.Schema({
-    epicId : {
+    epicId: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        trim: true
     },
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     dob: {
         type: Date,
@@ -20,7 +24,7 @@ const voterSchema = new mongoose.Schema({
     },
     gender: {
         type: String,
-        enum: ['Male', 'Female', 'Other'],
+        enum: ["Male", "Female", "Other"],
         required: true
     },
     address: {
@@ -54,7 +58,7 @@ const voterSchema = new mongoose.Schema({
     qr_code: {
         type: String,
         required: true
-    }, 
+    },
     password: {
         type: String,
         required: [true, "Password is required"]
@@ -63,28 +67,55 @@ const voterSchema = new mongoose.Schema({
         type: String
     },
     hash: {
+        type: String
+    },
+    state: {
         type: String,
-        required: false
+        required: true,
+        enum: Object.keys(STATE_NUMBER_MAP),
+        trim: true
+    },
+    state_number: {
+        type: Number,
+        // immutable: true
     }
-
 }, { timestamps: true });
 
+/* =========================
+   PRE-SAVE HOOK
+========================= */
 voterSchema.pre("save", async function () {
+    // NOTE: Mongoose supports promise-based middleware. Using `async` + `next`
+    // can lead to `next is not a function` depending on how middleware is invoked.
 
-    const hash = keccak256(this.epicId + this.name);
-    this.hash = hash;
-    if(!this.isModified("password")) return;
+    // Deterministic identity hash
+    this.hash = keccak256(this.epicId + this.name);
 
-    this.password = await bcrypt.hash(this.password, 10)
-})
+    // Auto-assign state number
+    if (this.isNew || this.isModified("state")) {
+        const stateNumber = STATE_NUMBER_MAP[this.state];
 
+        if (!stateNumber) {
+            throw new Error(`Invalid state/UT: ${this.state}`);
+        }
 
+        this.state_number = stateNumber;
+    }
 
-voterSchema.methods.isPasswordCorrect = async function(password){
-    return await bcrypt.compare(password, this.password)
-}
+    // Hash password only if changed
+    if (!this.isModified("password")) return;
 
-voterSchema.methods.generateAccessToken = function(){
+    this.password = await bcrypt.hash(this.password, 10);
+});
+
+/* =========================
+   METHODS
+========================= */
+voterSchema.methods.isPasswordCorrect = async function (password) {
+    return bcrypt.compare(password, this.password);
+};
+
+voterSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             _id: this._id,
@@ -92,23 +123,22 @@ voterSchema.methods.generateAccessToken = function(){
             name: this.name
         },
         process.env.ACCESS_TOKEN_SECRET,
-        {
-            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
-        }
-    )
-}
+        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
+    );
+};
 
-voterSchema.methods.generateRefreshToken = function(){
+voterSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
-        {
-            _id: this._id,
-            
-        },
+        { _id: this._id },
         process.env.REFRESH_TOKEN_SECRET,
-        {
-            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
-        }
-    )
-}
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+    );
+};
 
-export const Voter = mongoose.model('Voter', voterSchema);
+/* =========================
+   INDEXES (optional but good)
+========================= */
+voterSchema.index({ epicId: 1 });
+voterSchema.index({ state_number: 1 });
+
+export const Voter = mongoose.model("Voter", voterSchema);

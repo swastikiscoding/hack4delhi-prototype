@@ -22,10 +22,10 @@ const generateAccessAndRefreshTokens = async(userId) =>{
 }
 
 export const registerVoter = asyncHandler(async (req, res) => {
-    const { epicId, name, dob, gender, address, constituency_number, constituency_name, part_number, part_name, polling_station, photo, qr_code, password } = req.body;
+    const { epicId, name, dob, gender, address, constituency_number, constituency_name,state, part_number, part_name, polling_station, photo, qr_code, password } = req.body;
 
     if (
-        [epicId, name, dob, gender, address, constituency_number, constituency_name, part_number, part_name, polling_station, photo, qr_code, password].some((field) => {
+        [epicId, name, dob, gender, address, constituency_number, constituency_name, state, part_number, part_name, polling_station, photo, qr_code, password].some((field) => {
             if (field === undefined || field === null) return true;
             if (typeof field === 'string' && field.trim() === "") return true;
             return false;
@@ -48,12 +48,14 @@ export const registerVoter = asyncHandler(async (req, res) => {
         address,
         constituency_number,
         constituency_name,
+        state,
         part_number,
         part_name,
         polling_station,
         photo,
         qr_code,
-        password
+        password,
+        state
     })
 
     const createdVoter = await Voter.findById(voter._id).select(

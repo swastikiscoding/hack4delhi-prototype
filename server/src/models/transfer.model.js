@@ -13,6 +13,10 @@ const TransferRequestSchema = new mongoose.Schema({
     toAddress: {
         type: String,
         required: true
+    },
+    proof: {
+        type: String,
+        required: true
     }
 }, {timestamps: true});
 

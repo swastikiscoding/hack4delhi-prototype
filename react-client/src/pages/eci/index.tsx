@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ethers } from "ethers";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -102,6 +104,46 @@ const auditLogs = [
 ];
 
 export default function EciDashboard() {
+  const navigate = useNavigate();
+  const [walletAddress, setWalletAddress] = useState("Connecting...");
+
+  useEffect(() => {
+    const getAddress = async () => {
+      if (window.ethereum) {
+        try {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const address = await signer.getAddress();
+
+          setWalletAddress(address);
+        } catch (error) {
+          console.error("Error fetching wallet address:", error);
+          setWalletAddress("Not Connected");
+        }
+      }
+    };
+
+    getAddress();
+  }, []);
+
+  const handleDisconnect = async () => {
+    try {
+      // MetaMask does not provide a universal "disconnect" API, but it does
+      // support revoking permissions in many versions.
+      if (window.ethereum?.request) {
+        await window.ethereum.request({
+          method: "wallet_revokePermissions",
+          params: [{ eth_accounts: {} }],
+        });
+      }
+    } catch (error) {
+      // If revoke isn't supported, we still treat this as an app-level logout.
+      console.warn("wallet_revokePermissions failed/unsupported:", error);
+    } finally {
+      navigate("/");
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredStates = states.filter(
@@ -218,7 +260,12 @@ export default function EciDashboard() {
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/10">
                   <Wallet1 className="text-blue-300" height={20} width={20} />
-                  <span className="font-mono text-sm">0x12...89A</span>
+                  <span
+                    className="font-mono text-sm truncate max-w-[200px]"
+                    title={walletAddress}
+                  >
+                    {walletAddress}
+                  </span>
                 </div>
                 <div className="flex gap-3">
                   <Button
@@ -231,6 +278,7 @@ export default function EciDashboard() {
                     className="flex-1 text-white border-white/30 hover:bg-white/10"
                     size="sm"
                     variant="bordered"
+                    onPress={handleDisconnect}
                   >
                     <Exit height={16} width={16} /> Disconnect
                   </Button>
