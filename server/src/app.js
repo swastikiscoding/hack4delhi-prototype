@@ -2,9 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { ApiResponse } from './utils/ApiResponse.js';
-// import { userRouter } from './routes/user.route.js';
-
-
 
 const app = express();
 
