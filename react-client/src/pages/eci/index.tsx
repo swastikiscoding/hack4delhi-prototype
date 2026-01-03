@@ -117,7 +117,7 @@ export default function EciDashboard() {
         <div className="container mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-900 text-white rounded-lg">
-              <Shield2 width={24} height={24} />
+              <Shield2 height={24} width={24} />
             </div>
             <div className="flex flex-col">
               <h1 className="text-lg font-bold leading-tight">
@@ -134,31 +134,31 @@ export default function EciDashboard() {
               className="flex items-center gap-2 text-sm font-medium text-primary"
               href="#"
             >
-              <DashboardSquare1 width={18} height={18} /> Dashboard
+              <DashboardSquare1 height={18} width={18} /> Dashboard
             </a>
             <a
               className="flex items-center gap-2 text-sm font-medium text-default-500 hover:text-foreground transition-colors"
               href="#"
             >
-              <MapMarker1 width={18} height={18} /> State Management
+              <MapMarker1 height={18} width={18} /> State Management
             </a>
             <a
               className="flex items-center gap-2 text-sm font-medium text-default-500 hover:text-foreground transition-colors"
               href="#"
             >
-              <FileMultiple width={18} height={18} /> Audit Logs
+              <FileMultiple height={18} width={18} /> Audit Logs
             </a>
             <a
               className="flex items-center gap-2 text-sm font-medium text-default-500 hover:text-foreground transition-colors"
               href="#"
             >
-              <Gear1 width={18} height={18} /> Settings
+              <Gear1 height={18} width={18} /> Settings
             </a>
           </nav>
 
           <div className="flex items-center gap-4">
             <button className="text-default-500 hover:text-foreground transition-colors">
-              <Alarm1 width={20} height={20} />
+              <Alarm1 height={20} width={20} />
             </button>
             <ThemeSwitch />
             <Chip
@@ -217,7 +217,7 @@ export default function EciDashboard() {
                   </Chip>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/10">
-                  <Wallet1 className="text-blue-300" width={20} height={20} />
+                  <Wallet1 className="text-blue-300" height={20} width={20} />
                   <span className="font-mono text-sm">0x12...89A</span>
                 </div>
                 <div className="flex gap-3">
@@ -225,14 +225,14 @@ export default function EciDashboard() {
                     className="flex-1 bg-white text-blue-900 font-semibold"
                     size="sm"
                   >
-                    <Key1 width={16} height={16} /> Manage Keys
+                    <Key1 height={16} width={16} /> Manage Keys
                   </Button>
                   <Button
                     className="flex-1 text-white border-white/30 hover:bg-white/10"
                     size="sm"
                     variant="bordered"
                   >
-                    <Exit width={16} height={16} /> Disconnect
+                    <Exit height={16} width={16} /> Disconnect
                   </Button>
                 </div>
               </CardBody>
@@ -249,7 +249,7 @@ export default function EciDashboard() {
                   States Authorized
                 </p>
                 <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
-                  <MapMarker1 width={18} height={18} />
+                  <MapMarker1 height={18} width={18} />
                 </div>
               </div>
               <h3 className="text-3xl font-bold text-foreground">
@@ -271,7 +271,7 @@ export default function EciDashboard() {
                   Total EROs
                 </p>
                 <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
-                  <UserMultiple4 width={18} height={18} />
+                  <UserMultiple4 height={18} width={18} />
                 </div>
               </div>
               <h3 className="text-3xl font-bold text-foreground">4,820</h3>
@@ -288,7 +288,7 @@ export default function EciDashboard() {
                   Total BLOs
                 </p>
                 <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg">
-                  <TrendUp1 width={18} height={18} />
+                  <TrendUp1 height={18} width={18} />
                 </div>
               </div>
               <h3 className="text-3xl font-bold text-foreground">124k</h3>
@@ -303,7 +303,7 @@ export default function EciDashboard() {
                   Active Migrations
                 </p>
                 <div className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
-                  <Stopwatch width={18} height={18} />
+                  <Stopwatch height={18} width={18} />
                 </div>
               </div>
               <h3 className="text-3xl font-bold text-foreground">892</h3>
@@ -329,7 +329,7 @@ export default function EciDashboard() {
               <Button
                 className="font-semibold"
                 color="primary"
-                startContent={<Plus width={18} height={18} />}
+                startContent={<Plus height={18} width={18} />}
               >
                 Grant New Authority
               </Button>
@@ -340,7 +340,11 @@ export default function EciDashboard() {
                 className="max-w-md"
                 placeholder="Search State or Code..."
                 startContent={
-                  <Search1 className="text-default-400" width={18} height={18} />
+                  <Search1
+                    className="text-default-400"
+                    height={18}
+                    width={18}
+                  />
                 }
                 value={searchQuery}
                 onValueChange={setSearchQuery}
@@ -394,10 +398,15 @@ export default function EciDashboard() {
                               state.status === "AUTHORIZED" ? (
                                 <CheckCircle1
                                   className="ml-1"
-                                  width={14} height={14}
+                                  height={14}
+                                  width={14}
                                 />
                               ) : (
-                                <Stopwatch className="ml-1" width={14} height={14} />
+                                <Stopwatch
+                                  className="ml-1"
+                                  height={14}
+                                  width={14}
+                                />
                               )
                             }
                             variant="flat"
@@ -478,10 +487,18 @@ export default function EciDashboard() {
                                   : "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
                           }`}
                         >
-                          {log.type === "sync" && <TrendUp1 width={18} height={18} />}
-                          {log.type === "auth" && <Shield2 width={18} height={18} />}
-                          {log.type === "alert" && <Ban2 width={18} height={18} />}
-                          {log.type === "update" && <FileMultiple width={18} height={18} />}
+                          {log.type === "sync" && (
+                            <TrendUp1 height={18} width={18} />
+                          )}
+                          {log.type === "auth" && (
+                            <Shield2 height={18} width={18} />
+                          )}
+                          {log.type === "alert" && (
+                            <Ban2 height={18} width={18} />
+                          )}
+                          {log.type === "update" && (
+                            <FileMultiple height={18} width={18} />
+                          )}
                         </div>
                         <div className="flex-1 space-y-1">
                           <div className="flex justify-between items-start">
@@ -496,7 +513,8 @@ export default function EciDashboard() {
                             {log.desc}
                           </p>
                           <button className="flex items-center gap-1 text-xs text-primary hover:underline mt-2">
-                            <Link2AngularRight width={12} height={12} /> View on Explorer
+                            <Link2AngularRight height={12} width={12} /> View on
+                            Explorer
                           </button>
                         </div>
                       </div>

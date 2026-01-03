@@ -1,11 +1,29 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Card } from "@heroui/card";
 import { Link } from "@heroui/link";
 
 import { Navbar } from "@/components/navbar";
+import { useVoterStore } from "@/store/voterStore";
 
 export default function LoginPage() {
+  const [epicId, setEpicId] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+  const { login, isLoading, error } = useVoterStore();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await login(epicId, password);
+      navigate("/citizen");
+    } catch (err) {
+      console.error("Login failed", err);
+    }
+  };
+
   return (
     <div className="relative flex flex-col min-h-screen bg-background font-sans antialiased">
       <Navbar />
@@ -51,16 +69,15 @@ export default function LoginPage() {
                   </p>
                 </div>
 
-                <form
-                  className="flex flex-col gap-6"
-                  onSubmit={(e) => e.preventDefault()}
-                >
+                <form className="flex flex-col gap-6" onSubmit={handleLogin}>
                   <Input
                     isRequired
                     label="EPIC Number"
                     placeholder="Enter your EPIC ID (e.g. ABC1234567)"
                     type="text"
+                    value={epicId}
                     variant="bordered"
+                    onChange={(e) => setEpicId(e.target.value)}
                   />
                   <div className="flex flex-col gap-2">
                     <Input
@@ -68,7 +85,9 @@ export default function LoginPage() {
                       label="Password"
                       placeholder="Enter your password"
                       type="password"
+                      value={password}
                       variant="bordered"
+                      onChange={(e) => setPassword(e.target.value)}
                     />
                     <div className="flex justify-end">
                       <Link className="text-xs text-default-500 hover:text-primary cursor-pointer">
@@ -77,12 +96,14 @@ export default function LoginPage() {
                     </div>
                   </div>
 
+                  {error && <p className="text-red-500 text-sm">{error}</p>}
+
                   <Button
-                    as={Link}
                     className="w-full font-semibold shadow-lg shadow-primary/20"
                     color="primary"
-                    href="/citizen"
+                    isLoading={isLoading}
                     size="lg"
+                    type="submit"
                   >
                     Login
                   </Button>

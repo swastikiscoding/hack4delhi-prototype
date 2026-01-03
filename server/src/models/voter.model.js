@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const voterSchema = new mongoose.Schema({
-    epidId : {
+    epicId : {
         type: String,
         required: true,
         unique: true
@@ -53,9 +55,49 @@ const voterSchema = new mongoose.Schema({
     }, 
     password: {
         type: String,
-        required: true
+        required: [true, "Password is required"]
+    },
+    refreshToken: {
+        type: String
     }
 
 }, { timestamps: true });
 
-export const VoterModel = mongoose.model('Voter', voterSchema);
+voterSchema.pre("save", async function () {
+    if(!this.isModified("password")) return;
+
+    this.password = await bcrypt.hash(this.password, 10)
+})
+
+voterSchema.methods.isPasswordCorrect = async function(password){
+    return await bcrypt.compare(password, this.password)
+}
+
+voterSchema.methods.generateAccessToken = function(){
+    return jwt.sign(
+        {
+            _id: this._id,
+            epicId: this.epicId,
+            name: this.name
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+        }
+    )
+}
+
+voterSchema.methods.generateRefreshToken = function(){
+    return jwt.sign(
+        {
+            _id: this._id,
+            
+        },
+        process.env.REFRESH_TOKEN_SECRET,
+        {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+        }
+    )
+}
+
+export const Voter = mongoose.model('Voter', voterSchema);

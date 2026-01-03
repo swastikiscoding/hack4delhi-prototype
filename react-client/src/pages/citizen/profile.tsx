@@ -1,10 +1,28 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardBody } from "@heroui/card";
 import { Image } from "@heroui/image";
 import { Divider } from "@heroui/divider";
 
 import CitizenLayout from "@/layouts/citizen";
+import { useVoterStore } from "@/store/voterStore";
 
 export default function CitizenProfile() {
+  const { voter, isAuthenticated, fetchProfile } = useVoterStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/");
+    } else {
+      fetchProfile();
+    }
+  }, [isAuthenticated, navigate, fetchProfile]);
+
+  if (!isAuthenticated || !voter) {
+    return null;
+  }
+
   return (
     <CitizenLayout>
       <div className="flex flex-col gap-6 max-w-4xl mx-auto">
@@ -51,12 +69,15 @@ export default function CitizenProfile() {
                     alt="Voter Photo"
                     className="w-full h-full object-cover"
                     radius="none"
-                    src="https://i.pravatar.cc/300?u=a04258114e29026708c"
+                    src={
+                      voter.photo ||
+                      "https://i.pravatar.cc/300?u=a04258114e29026708c"
+                    }
                   />
                 </div>
                 <div className="text-center">
                   <p className="font-mono font-bold text-xl tracking-wider">
-                    DL/01/001/123456
+                    {voter.epicId}
                   </p>
                 </div>
               </div>
@@ -68,23 +89,25 @@ export default function CitizenProfile() {
                     Name
                   </p>
                   <p className="text-xl font-bold text-default-900">
-                    Rajesh Kumar
+                    {voter.name}
                   </p>
-                  <p className="text-sm text-default-500">S/o Suresh Kumar</p>
+                  {/* <p className="text-sm text-default-500">S/o Suresh Kumar</p> */}
                 </div>
 
                 <div>
                   <p className="text-xs text-default-400 uppercase font-semibold mb-1">
                     Date of Birth
                   </p>
-                  <p className="text-lg font-medium">15/08/1985</p>
+                  <p className="text-lg font-medium">
+                    {new Date(voter.dob).toLocaleDateString()}
+                  </p>
                 </div>
 
                 <div>
                   <p className="text-xs text-default-400 uppercase font-semibold mb-1">
                     Gender
                   </p>
-                  <p className="text-lg font-medium">Male</p>
+                  <p className="text-lg font-medium">{voter.gender}</p>
                 </div>
 
                 <div className="col-span-1 md:col-span-2">
@@ -92,7 +115,7 @@ export default function CitizenProfile() {
                     Address
                   </p>
                   <p className="text-lg font-medium leading-relaxed">
-                    H.No 123, Block B, Pocket 4, Vasant Kunj, New Delhi - 110070
+                    {voter.address}
                   </p>
                 </div>
 
@@ -102,14 +125,16 @@ export default function CitizenProfile() {
                   <p className="text-xs text-default-400 uppercase font-semibold mb-1">
                     Constituency
                   </p>
-                  <p className="text-lg font-medium">New Delhi AC-40</p>
+                  <p className="text-lg font-medium">
+                    {voter.constituency_name}
+                  </p>
                 </div>
 
                 <div>
                   <p className="text-xs text-default-400 uppercase font-semibold mb-1">
                     Part Number
                   </p>
-                  <p className="text-lg font-medium">124</p>
+                  <p className="text-lg font-medium">{voter.part_number}</p>
                 </div>
               </div>
 
@@ -118,19 +143,28 @@ export default function CitizenProfile() {
                 <div className="w-32 h-32 bg-white p-2 rounded-lg border border-default-200">
                   <div className="w-full h-full bg-black/10 flex items-center justify-center">
                     {/* QR Placeholder */}
-                    <svg
-                      className="w-16 h-16 text-default-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
+                    {voter.qr_code ? (
+                      <Image
+                        alt="Voter QR Code"
+                        className="w-full h-full object-cover"
+                        radius="none"
+                        src={voter.qr_code}
                       />
-                    </svg>
+                    ) : (
+                      <svg
+                        className="w-16 h-16 text-default-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    )}
                   </div>
                 </div>
                 <p className="text-[10px] text-default-400 text-center">
