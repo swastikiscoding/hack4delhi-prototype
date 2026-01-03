@@ -28,7 +28,7 @@ interface VoterState {
   error: string | null;
   login: (epicId: string, password: string) => Promise<void>;
   fetchProfile: () => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const useVoterStore = create<VoterState>()(
@@ -103,8 +103,27 @@ export const useVoterStore = create<VoterState>()(
           }
         }
       },
-      logout: () =>
-        set({ voter: null, accessToken: null, isAuthenticated: false }),
+      logout: async () => {
+        const { accessToken } = get();
+
+        try {
+          if (accessToken) {
+            await axios.post(
+              "http://localhost:8000/api/v1/voters/logout",
+              {},
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              },
+            );
+          }
+        } catch (error) {
+          console.error("Logout failed on server", error);
+        } finally {
+          set({ voter: null, accessToken: null, isAuthenticated: false });
+        }
+      },
     }),
     {
       name: "voter-storage",

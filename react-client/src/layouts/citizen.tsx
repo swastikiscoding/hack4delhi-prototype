@@ -1,7 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@heroui/button";
 
 import { Navbar } from "@/components/navbar";
+import { useVoterStore } from "@/store/voterStore";
 
 interface CitizenLayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,13 @@ interface CitizenLayoutProps {
 
 export default function CitizenLayout({ children }: CitizenLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useVoterStore();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
 
   const sidebarItems = [
     {
@@ -140,6 +148,7 @@ export default function CitizenLayout({ children }: CitizenLayoutProps) {
                 </svg>
               }
               variant="light"
+              onPress={handleLogout}
             >
               Log Out
             </Button>
