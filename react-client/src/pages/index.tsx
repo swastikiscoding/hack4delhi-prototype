@@ -18,7 +18,7 @@ export default function IndexPage() {
           <div className="inline-flex items-center px-3 py-1 rounded-full border border-default-200 bg-default-50 w-fit">
             <span className="w-2 h-2 rounded-full bg-success mr-2 animate-pulse" />
             <span className="text-xs font-medium text-default-500">
-              Live & Synchronized across 28 States
+              Live & Synchronized
             </span>
           </div>
 
@@ -302,12 +302,12 @@ export default function IndexPage() {
           {/* Feature 1: Inclusive Democracy */}
           <div className="flex flex-col md:flex-row items-center gap-16">
             <div className="w-full md:w-1/2 relative group">
-              <div className="absolute -inset-4 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-3xl opacity-20 blur-2xl group-hover:opacity-30 transition-opacity duration-500" />
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-3xl opacity-20 blur-2xl group-hover:opacity-30 transition-opacity duration-500" />
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10">
                 <Image
-                  alt="Indian woman showing inked finger"
+                  alt="Indian Democracy"
                   className="w-full h-[500px] object-cover hover:scale-105 transition-transform duration-700"
-                  src="https://images.unsplash.com/photo-1541872703-74c5963631df?q=80&w=800&auto=format&fit=crop"
+                  src="https://images.unsplash.com/photo-1532375810709-75b1da00537c?q=80&w=800&auto=format&fit=crop"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-8 left-8 text-white">
@@ -321,16 +321,16 @@ export default function IndexPage() {
             </div>
 
             <div className="w-full md:w-1/2 flex flex-col gap-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 w-fit">
-                <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                <span className="text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 w-fit">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-sm font-bold text-primary uppercase tracking-wider">
                   Inclusivity First
                 </span>
               </div>
 
               <h3 className="text-4xl md:text-5xl font-bold leading-tight">
                 Democracy that <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">
                   Reaches Everyone
                 </span>
               </h3>
@@ -353,9 +353,9 @@ export default function IndexPage() {
                 ].map((item, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-4 p-4 rounded-2xl bg-default-50 border border-default-100 hover:border-orange-500/30 transition-colors"
+                    className="flex items-start gap-4 p-4 rounded-2xl bg-default-50 border border-default-100 hover:border-primary/30 transition-colors"
                   >
-                    <div className="mt-1 p-2 rounded-lg bg-orange-500/10 text-orange-600">
+                    <div className="mt-1 p-2 rounded-lg bg-primary/10 text-primary">
                       <svg
                         className="w-5 h-5"
                         fill="none"
