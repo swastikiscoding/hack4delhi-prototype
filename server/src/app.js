@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { ApiResponse } from './utils/ApiResponse.js';
 import { voterRouter } from './routes/voter.route.js';
+import { blockchainRouter } from './routes/blockchain.route.js';
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(cors({
 
 // Routes
 app.use('/api/v1/voters', voterRouter);
+app.use('/api/v1/blockchain', blockchainRouter);
 
 app.get('/', (req, res) => {
   res.json(new ApiResponse(200, {}, 'API is running successfully'));

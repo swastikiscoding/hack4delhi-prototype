@@ -1,7 +1,5 @@
-import {ethers} from "ethers";
+import { JsonRpcProvider } from "ethers";
 
-export const provider = new ethers.JsonRpcProvider(
-  process.env.ALCHEMY_RPC_URL
-);
+const provider = new JsonRpcProvider(process.env.ALCHEMY_RPC_URL);
 
-
+export default provider;
