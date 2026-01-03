@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import pkg from 'js-sha3';
+const { keccak256 } = pkg;
 
 const voterSchema = new mongoose.Schema({
     epicId : {
@@ -59,15 +61,24 @@ const voterSchema = new mongoose.Schema({
     },
     refreshToken: {
         type: String
+    },
+    hash: {
+        type: String,
+        required: false
     }
 
 }, { timestamps: true });
 
 voterSchema.pre("save", async function () {
+
+    const hash = keccak256(this.epicId + this.name);
+    this.hash = hash;
     if(!this.isModified("password")) return;
 
     this.password = await bcrypt.hash(this.password, 10)
 })
+
+
 
 voterSchema.methods.isPasswordCorrect = async function(password){
     return await bcrypt.compare(password, this.password)
