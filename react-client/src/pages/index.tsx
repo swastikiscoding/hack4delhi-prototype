@@ -256,8 +256,8 @@ export default function IndexPage() {
             </Card>
 
             {/* Card 4: Sync (Large - 8 cols) */}
-            <Card className="md:col-span-8 bg-gradient-to-r from-blue-900 to-slate-900 text-white border-none shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden">
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
+            <Card className="md:col-span-8 bg-gradient-to-r from-blue-900 to-slate-800 text-white border-none shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden">
+              <div className="absolute inset-0 opacity-20" />
               <CardHeader className="flex flex-row items-center justify-between h-full p-8 z-10 relative">
                 <div className="max-w-lg">
                   <div className="flex items-center gap-3 mb-4">
@@ -502,13 +502,13 @@ export default function IndexPage() {
       </section>
 
       {/* Trust & Credibility Section */}
-      <section className="py-24 relative overflow-hidden rounded-3xl bg-gradient-to-b from-zinc-900 to-black text-white text-center mb-12 border border-white/10 shadow-2xl">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay" />
+      <section className="py-24 relative overflow-hidden rounded-3xl bg-gradient-to-b from-default-50 to-default-100 text-default-900 text-center mb-12 border border-white/10 shadow-2xl">
+        <div className="absolute inset-0 opacity-10 mix-blend-overlay" />
         <div className="relative z-10 max-w-4xl mx-auto px-6">
           <h3 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight">
             Commitment to Integrity
           </h3>
-          <p className="text-lg md:text-xl text-zinc-400 leading-relaxed mb-10 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-default-800 leading-relaxed mb-10 max-w-2xl mx-auto">
             The Unified Electoral Roll System is built on the principles of
             transparency, privacy, and constitutional alignment. We ensure that
             no personal data is exposed while maintaining a verifiable audit
@@ -516,9 +516,9 @@ export default function IndexPage() {
           </p>
           <div className="flex flex-wrap justify-center gap-8 md:gap-16">
             <div className="flex flex-col items-center gap-3 group">
-              <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/10 transition-colors">
+              <div className="w-14 h-14 rounded-2xl bg-default-900/5 border border-default-900/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/10 transition-colors">
                 <svg
-                  className="w-7 h-7 text-zinc-300 group-hover:text-white transition-colors"
+                  className="w-7 h-7 text-default-700 group-hover:text-white transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -531,14 +531,14 @@ export default function IndexPage() {
                   />
                 </svg>
               </div>
-              <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors">
+              <span className="text-sm font-medium text-default-700 group-hover:text-default-200 transition-colors">
                 256-bit Encryption
               </span>
             </div>
             <div className="flex flex-col items-center gap-3 group">
-              <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/10 transition-colors">
+              <div className="w-14 h-14 rounded-2xl bg-default-800/5 border border-default-800/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/10 transition-colors">
                 <svg
-                  className="w-7 h-7 text-zinc-300 group-hover:text-white transition-colors"
+                  className="w-7 h-7 text-default-700 group-hover:text-white transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -551,14 +551,14 @@ export default function IndexPage() {
                   />
                 </svg>
               </div>
-              <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors">
+              <span className="text-sm font-medium text-default-700 group-hover:text-default-200 transition-colors">
                 ISO 27001 Certified
               </span>
             </div>
             <div className="flex flex-col items-center gap-3 group">
-              <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/10 transition-colors">
+              <div className="w-14 h-14 rounded-2xl bg-default-900/5 border border-default-900/10 flex items-center justify-center backdrop-blur-md group-hover:bg-white/10 transition-colors">
                 <svg
-                  className="w-7 h-7 text-zinc-300 group-hover:text-white transition-colors"
+                  className="w-7 h-7 text-default-700 group-hover:text-white transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -571,7 +571,7 @@ export default function IndexPage() {
                   />
                 </svg>
               </div>
-              <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors">
+              <span className="text-sm font-medium text-default-700 group-hover:text-default-200 transition-colors">
                 Zero-Knowledge Proofs
               </span>
             </div>

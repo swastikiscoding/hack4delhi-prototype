@@ -37,27 +37,18 @@ export default function CitizenProfile() {
 
           <CardBody className="p-8 md:p-12">
             <div className="flex flex-col items-center text-center mb-10">
-              <div className="w-16 h-16 mb-4 opacity-80">
-                {/* Emblem Placeholder */}
-                <svg
-                  className="w-full h-full text-default-900"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                  />
-                </svg>
+              <div className="mb-4  p-3 rounded-xl">
+                <Image
+                  alt="ECI Logo"
+                  className="h-16 w-auto"
+                  src="https://www.eci.gov.in/newimg/eci-logo-white.svg"
+                />
               </div>
               <h2 className="text-2xl font-bold uppercase tracking-widest text-default-900">
                 Election Commission of India
               </h2>
               <p className="text-default-500 font-medium uppercase tracking-wide text-sm">
-                Elector Photo Identity Card
+                Electoral Photo Identity Card
               </p>
             </div>
 
