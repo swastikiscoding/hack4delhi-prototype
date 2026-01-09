@@ -15,6 +15,7 @@ import EroDashboard from "@/pages/ero/index";
 import StateEcDashboard from "@/pages/state-ec/index";
 import EciDashboard from "@/pages/eci/index";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { RoleProtectedRoute } from "@/components/ProtectedRoute";
 
 function App() {
   return (
@@ -33,10 +34,24 @@ function App() {
       <Route element={<CitizenGrievances />} path="/citizen/grievances" />
 
       {/* BLO Portal Routes */}
-      <Route element={<BloDashboard />} path="/blo" />
+      <Route
+        element={
+          <RoleProtectedRoute forceReconnect role="BLO">
+            <BloDashboard />
+          </RoleProtectedRoute>
+        }
+        path="/blo"
+      />
 
       {/* ERO Portal Routes */}
-      <Route element={<EroDashboard />} path="/ero" />
+      <Route
+        element={
+          <RoleProtectedRoute forceReconnect role="ERO">
+            <EroDashboard />
+          </RoleProtectedRoute>
+        }
+        path="/ero"
+      />
 
       {/* State EC Portal Routes */}
       <Route element={<StateEcDashboard />} path="/state-ec" />

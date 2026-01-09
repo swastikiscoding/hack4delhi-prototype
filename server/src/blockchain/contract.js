@@ -2,10 +2,16 @@ import { Contract } from "ethers";
 import provider from "./provider.js";
 import contractABI from "../abi/UnifiedElectoralRoll.json" with { type: "json" };
 
-const contract = new Contract(
-  process.env.CONTRACT_ADDRESS,
-  contractABI,
-  provider
-);
+const getContract = () => {
+  const address = process.env.CONTRACT_ADDRESS;
 
-export default contract;
+  if (!address) {
+    throw new Error(
+      "CONTRACT_ADDRESS is not set (required to use blockchain endpoints)"
+    );
+  }
+
+  return new Contract(address, contractABI, provider);
+};
+
+export default getContract;

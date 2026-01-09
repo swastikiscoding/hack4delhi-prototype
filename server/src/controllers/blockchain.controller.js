@@ -1,4 +1,4 @@
-import contract from "../blockchain/contract.js";
+import getContract from "../blockchain/contract.js";
 import { keccak256, toUtf8Bytes } from "ethers";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
@@ -6,6 +6,8 @@ export const getVoterStatus = async (req, res) => {
   try {
     const { epic } = req.params;
     const epicHash = keccak256(toUtf8Bytes(epic));
+
+    const contract = getContract();
 
     const voter = await contract.getVoter(epicHash);
 

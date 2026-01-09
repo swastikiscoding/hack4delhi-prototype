@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Avatar } from "@heroui/avatar";
 import { Input } from "@heroui/input";
 import {
   Modal,
@@ -14,90 +13,204 @@ import {
 } from "@heroui/modal";
 
 import { ThemeSwitch } from "@/components/theme-switch";
+import { ethers } from "ethers";
+import { toast } from "sonner";
 
-// Mock Data
-const initialRequests = [
-  {
-    id: 1,
-    epicHash: "0x3c...9b2",
-    fullHash:
-      "0x3c7f8a9b2d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
-    fromState: "Uttar Pradesh (UP)",
-    toState: "Delhi (DL)",
-    constituency: "New Delhi AC-40",
-    bloStatus: "VERIFIED",
-    timestamp: "2024-01-02 10:30 AM",
-    status: "PENDING_APPROVAL",
-    bloId: "BLO-DL-045",
-    bloVerifiedAt: "2024-01-02 14:15 PM",
-    proof: "Rent_Agreement.pdf",
-  },
-  {
-    id: 2,
-    epicHash: "0x4a...8c1",
-    fullHash:
-      "0x4a7f8a9b2d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
-    fromState: "Maharashtra (MH)",
-    toState: "Delhi (DL)",
-    constituency: "Chandni Chowk AC-20",
-    bloStatus: "PENDING",
-    timestamp: "2024-01-02 09:15 AM",
-    status: "PENDING_BLO",
-    bloId: null,
-    bloVerifiedAt: null,
-    proof: "Aadhaar_Card.pdf",
-  },
-  {
-    id: 3,
-    epicHash: "0x1b...2d4",
-    fullHash:
-      "0x1b7f8a9b2d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
-    fromState: "Karnataka (KA)",
-    toState: "Delhi (DL)",
-    constituency: "East Delhi AC-55",
-    bloStatus: "VERIFIED",
-    timestamp: "2024-01-01 16:45 PM",
-    status: "APPROVED",
-    bloId: "BLO-DL-012",
-    bloVerifiedAt: "2024-01-01 18:20 PM",
-    proof: "Electricity_Bill.pdf",
-  },
-  {
-    id: 4,
-    epicHash: "0x9d...4e1",
-    fullHash:
-      "0x9d7f8a9b2d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
-    fromState: "Punjab (PB)",
-    toState: "Delhi (DL)",
-    constituency: "West Delhi AC-30",
-    bloStatus: "REJECTED",
-    timestamp: "2024-01-01 14:20 PM",
-    status: "REJECTED",
-    bloId: "BLO-DL-088",
-    bloVerifiedAt: "2024-01-01 15:00 PM",
-    proof: "None",
-  },
-];
+import UnifiedElectoralRollABI from "@/abi/UnifiedElectoralRoll.json";
+import { CONTRACT_ADDRESS } from "@/config/blockchain";
+import { api } from "@/lib/api";
+import { getBrowserProvider, getSignerAddress } from "@/lib/wallet";
+import { ASSEMBLY_CONSTITUENCY_MAP } from "@/utils/constituencymap";
+
+type UiRequest = {
+  id: string;
+  epicHash: string;
+  fullHash: string;
+  fromState: string;
+  fromConstituencyNumber: number;
+  toState: string;
+  constituency: string;
+  bloStatus: "VERIFIED" | "PENDING" | "REJECTED";
+  timestamp: string;
+  status: "PENDING_APPROVAL" | "PENDING_BLO" | "APPROVED" | "REJECTED";
+  bloId: string | null;
+  bloVerifiedAt: string | null;
+  proof: string;
+  toStateNumber: number;
+  toConstituency: number;
+};
 
 export default function EroDashboard() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [selectedRequest, setSelectedRequest] = useState<
-    (typeof initialRequests)[0] | null
+    UiRequest | null
   >(null);
   const [filter, setFilter] = useState("ALL"); // ALL, PENDING, APPROVED, REJECTED
+  const [walletAddress, setWalletAddress] = useState<string>("Connecting...");
+  const [requests, setRequests] = useState<UiRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isActing, setIsActing] = useState(false);
 
-  const handleReview = (request: (typeof initialRequests)[0]) => {
+  const pendingCount = useMemo(
+    () =>
+      requests.filter(
+        (r) => r.status === "PENDING_APPROVAL" || r.status === "PENDING_BLO",
+      ).length,
+    [requests],
+  );
+
+  const refresh = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get("/transfers/ero/queue");
+      const raw = response.data?.data || [];
+
+      const mapped: UiRequest[] = raw.map((r: any) => {
+        const short =
+          typeof r.epicHash === "string" && r.epicHash.length > 10
+            ? `${r.epicHash.slice(0, 4)}...${r.epicHash.slice(-3)}`
+            : r.epicHash;
+
+        const status: UiRequest["status"] =
+          r.status === "BLO_VERIFIED"
+            ? "PENDING_APPROVAL"
+            : r.status === "ERO_APPROVED"
+              ? "APPROVED"
+              : r.status === "BLO_REJECTED" || r.status === "ERO_REJECTED"
+                ? "REJECTED"
+                : "PENDING_BLO";
+
+        const toStateName = String(r.toState || "");
+        const toConstituencyNumber = Number(r.toConstituency);
+        const mapForState =
+          (ASSEMBLY_CONSTITUENCY_MAP as Record<string, Record<string, number>>)[
+            toStateName
+          ];
+
+        let toConstituencyName: string | null = null;
+        if (mapForState && Number.isFinite(toConstituencyNumber)) {
+          for (const [name, num] of Object.entries(mapForState)) {
+            if (Number(num) === toConstituencyNumber) {
+              toConstituencyName = name;
+              break;
+            }
+          }
+        }
+
+        return {
+          id: r._id,
+          epicHash: short,
+          fullHash: r.epicHash,
+          fromState: r.fromState,
+          fromConstituencyNumber: Number(r.fromConstituency),
+          toState: r.toState,
+          constituency: toConstituencyName
+            ? `${toConstituencyName} (${toConstituencyNumber})`
+            : Number.isFinite(toConstituencyNumber)
+              ? `AC-${toConstituencyNumber}`
+              : "-",
+          bloStatus:
+            r.status === "BLO_REJECTED"
+              ? "REJECTED"
+              : r.status === "BLO_VERIFIED" || r.status === "ERO_REJECTED" || r.status === "ERO_APPROVED"
+                ? "VERIFIED"
+                : "PENDING",
+          timestamp: new Date(r.createdAt).toLocaleString(),
+          status,
+          bloId: r.bloAddress || null,
+          bloVerifiedAt: r.bloVerifiedAt ? new Date(r.bloVerifiedAt).toLocaleString() : null,
+          proof: r.proof,
+          toStateNumber: Number(r.toStateNumber),
+          toConstituency: Number(r.toConstituency),
+        };
+      });
+
+      setRequests(mapped);
+    } catch (e) {
+      console.error("Failed to load ERO queue", e);
+      setRequests([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  useEffect(() => {
+    const loadWallet = async () => {
+      try {
+        const addr = await getSignerAddress();
+        setWalletAddress(addr);
+      } catch {
+        setWalletAddress("Not Connected");
+      }
+    };
+    void loadWallet();
+  }, []);
+
+  const handleReview = (request: UiRequest) => {
     setSelectedRequest(request);
     onOpen();
   };
 
-  const filteredRequests = initialRequests.filter((req) => {
+  const filteredRequests = requests.filter((req) => {
     if (filter === "ALL") return true;
     if (filter === "PENDING")
       return req.status === "PENDING_APPROVAL" || req.status === "PENDING_BLO";
 
     return req.status === filter;
   });
+
+  const finalizeOnChainAndPersist = async (
+    decision: "APPROVE" | "REJECT",
+    onClose: () => void,
+  ) => {
+    if (!selectedRequest) return;
+    if (selectedRequest.status !== "PENDING_APPROVAL") return;
+
+    setIsActing(true);
+    try {
+      const provider = await getBrowserProvider();
+      const signer = await provider.getSigner();
+      const eroAddress = await signer.getAddress();
+
+      const contract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        UnifiedElectoralRollABI,
+        signer,
+      );
+
+      const tx =
+        decision === "APPROVE"
+          ? await contract.approveMigration(selectedRequest.fullHash)
+          : await contract.rejectMigration(selectedRequest.fullHash);
+
+      await tx.wait();
+
+      await api.post(`/transfers/${selectedRequest.id}/ero/finalize`, {
+        decision,
+        eroAddress,
+        eroTxHash: tx.hash,
+      });
+
+      toast.success(
+        decision === "APPROVE"
+          ? "Migration approved successfully"
+          : "Migration rejected successfully",
+      );
+
+      onClose();
+      setSelectedRequest(null);
+      await refresh();
+    } catch (e: any) {
+      console.error("ERO finalize failed", e);
+      toast.error(e?.reason || e?.message || "ERO action failed");
+    } finally {
+      setIsActing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 font-sans text-foreground">
@@ -160,13 +273,11 @@ export default function EroDashboard() {
             <Chip className="pl-2" color="primary" size="sm" variant="dot">
               ERO Level 1
             </Chip>
-            <Avatar
-              isBordered
-              className="w-8 h-8"
-              color="secondary"
-              size="sm"
-              src="https://i.pravatar.cc/150?u=ero"
-            />
+            <Chip className="font-mono" size="sm" variant="flat">
+              {walletAddress === "Connecting..." || walletAddress === "Not Connected"
+                ? walletAddress
+                : `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
+            </Chip>
           </div>
         </div>
       </header>
@@ -175,38 +286,15 @@ export default function EroDashboard() {
         {/* 2. Audit Notice Banner (Optional - included in header, but can add another if needed. Skipping to avoid clutter as per prompt "Center (optional)" in header) */}
 
         {/* 3. Metrics Summary Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="border border-default-200 shadow-sm">
             <CardBody className="p-6">
               <p className="text-sm font-medium text-default-500 mb-2">
                 Pending Review
               </p>
-              <h3 className="text-3xl font-bold text-foreground">8</h3>
-            </CardBody>
-          </Card>
-          <Card className="border border-default-200 shadow-sm">
-            <CardBody className="p-6">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm font-medium text-default-500">
-                  Approved Today
-                </p>
-                <div className="p-1 bg-green-100 text-green-600 rounded-full">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M5 13l4 4L19 7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <h3 className="text-3xl font-bold text-foreground">24</h3>
+              <h3 className="text-3xl font-bold text-foreground">
+                {isLoading ? "…" : pendingCount}
+              </h3>
             </CardBody>
           </Card>
         </div>
@@ -414,14 +502,35 @@ export default function EroDashboard() {
                               Constituency
                             </p>
                             <p className="font-medium">
-                              Old Constituency AC-XX
+                              {(() => {
+                                const state = selectedRequest.fromState;
+                                const number = Number(
+                                  selectedRequest.fromConstituencyNumber,
+                                );
+
+                                const mapForState =
+                                  (ASSEMBLY_CONSTITUENCY_MAP as Record<
+                                    string,
+                                    Record<string, number>
+                                  >)[state];
+
+                                let name: string | null = null;
+                                if (mapForState && Number.isFinite(number)) {
+                                  for (const [candidate, num] of Object.entries(
+                                    mapForState,
+                                  )) {
+                                    if (Number(num) === number) {
+                                      name = candidate;
+                                      break;
+                                    }
+                                  }
+                                }
+
+                                if (name) return `${name} (${number})`;
+                                if (Number.isFinite(number)) return `AC-${number}`;
+                                return "-";
+                              })()}
                             </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-default-400">
-                              Part Number
-                            </p>
-                            <p className="font-medium font-mono">Part-123</p>
                           </div>
                         </CardBody>
                       </Card>
@@ -468,9 +577,20 @@ export default function EroDashboard() {
                                   strokeWidth="2"
                                 />
                               </svg>
-                              <span className="text-sm font-medium truncate">
-                                {selectedRequest.proof}
-                              </span>
+                              {selectedRequest.proof ? (
+                                <a
+                                  className="text-sm font-medium truncate text-primary underline"
+                                  href={selectedRequest.proof}
+                                  rel="noreferrer"
+                                  target="_blank"
+                                >
+                                  View PDF
+                                </a>
+                              ) : (
+                                <span className="text-sm font-medium truncate">
+                                  -
+                                </span>
+                              )}
                             </div>
                           </div>
                         </CardBody>
@@ -536,15 +656,29 @@ export default function EroDashboard() {
                 )}
               </ModalBody>
               <ModalFooter className="border-t border-default-200 bg-default-50">
-                <Button color="danger" variant="flat" onPress={onClose}>
+                <Button
+                  color="danger"
+                  isDisabled={
+                    isActing ||
+                    !selectedRequest ||
+                    selectedRequest.status !== "PENDING_APPROVAL"
+                  }
+                  variant="flat"
+                  onPress={() => finalizeOnChainAndPersist("REJECT", onClose)}
+                >
                   Reject Migration
                 </Button>
                 <Button
                   className="text-white font-semibold shadow-lg shadow-green-500/20"
                   color="success"
-                  onPress={onClose}
+                  isDisabled={
+                    isActing ||
+                    !selectedRequest ||
+                    selectedRequest.status !== "PENDING_APPROVAL"
+                  }
+                  onPress={() => finalizeOnChainAndPersist("APPROVE", onClose)}
                 >
-                  Approve Migration
+                  {isActing ? "Processing…" : "Approve Migration"}
                 </Button>
               </ModalFooter>
             </>

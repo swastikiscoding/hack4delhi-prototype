@@ -39,18 +39,6 @@ const voterSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    part_number: {
-        type: String,
-        required: true
-    },
-    part_name: {
-        type: String,
-        required: true
-    },
-    polling_station: {
-        type: String,
-        required: true
-    },
     photo: {
         type: String,
         required: true
@@ -89,7 +77,7 @@ voterSchema.pre("save", async function () {
     // can lead to `next is not a function` depending on how middleware is invoked.
 
     // Deterministic identity hash
-    this.hash = keccak256(this.epicId + this.name);
+    this.hash = keccak256(this.epicId);
 
     // Auto-assign state number
     if (this.isNew || this.isModified("state")) {

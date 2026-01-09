@@ -4,7 +4,6 @@ import { ethers } from "ethers";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Avatar } from "@heroui/avatar";
 import { Input } from "@heroui/input";
 import {
   DashboardSquare1,
@@ -211,13 +210,6 @@ export default function EciDashboard() {
             >
               Sepolia
             </Chip>
-            <Avatar
-              isBordered
-              className="w-8 h-8"
-              color="primary"
-              size="sm"
-              src="https://i.pravatar.cc/150?u=eci"
-            />
           </div>
         </div>
       </header>
@@ -237,7 +229,7 @@ export default function EciDashboard() {
                 ROOT AUTHORITY ACCESS
               </Chip>
               <h2 className="text-3xl font-bold leading-tight">
-                National Authority for Unified Electoral Roll Governance
+                National Authority for ECTA Governance
               </h2>
               <p className="text-blue-100 max-w-2xl text-lg">
                 Oversee state commissions, authorize electoral officers, and

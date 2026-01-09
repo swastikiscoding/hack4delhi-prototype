@@ -44,7 +44,7 @@ export const Navbar = () => {
               />
             </svg>
             <p className="font-bold text-inherit tracking-tight">
-              Unified Electoral Roll
+              ECTA
             </p>
           </RouterLink>
         </NavbarBrand>

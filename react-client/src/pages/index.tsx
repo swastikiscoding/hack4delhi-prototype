@@ -11,33 +11,32 @@ export default function IndexPage() {
       {/* Hero Section */}
       <section className="relative flex flex-col md:flex-row items-center justify-between gap-12 min-h-[calc(100vh-5rem)] py-0 overflow-hidden">
         {/* Background decorative elements */}
-        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -z-10" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] -z-10" />
+        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[120px] -z-10" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-green-500/10 rounded-full blur-[120px] -z-10" />
 
         <div className="flex flex-col gap-8 max-w-2xl z-10">
           <div className="inline-flex items-center px-3 py-1 rounded-full border border-default-200 bg-default-50 w-fit">
             <span className="w-2 h-2 rounded-full bg-success mr-2 animate-pulse" />
             <span className="text-xs font-medium text-default-500">
-              Live & Synchronized
+              Blockchain Secured
             </span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1]">
             Democracy, <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">
-              Digitized.
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-green-600">
+              Decentralized.
             </span>
           </h1>
 
           <p className="text-xl text-default-600 leading-relaxed max-w-lg">
-            The Unified Electoral Roll System ensures every vote counts,
-            everywhere. Secure, transparent, and accessible for a mobile nation.
+            ECTA (Electoral Coordination and Transfer Automation) leverages Ethereum blockchain to ensure every vote is immutable, transparent, and accessible anywhere in India.
           </p>
 
           <div className="flex flex-wrap gap-4">
             <Button
               as={Link}
-              className="font-semibold px-8 shadow-xl shadow-primary/20"
+              className="font-semibold px-8 shadow-xl shadow-orange-500/20"
               color="primary"
               radius="full"
               size="lg"
@@ -54,29 +53,6 @@ export default function IndexPage() {
               Learn How It Works
             </Button>
           </div>
-
-          <div className="flex items-center gap-4 pt-4">
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="w-10 h-10 rounded-full border-2 border-background bg-default-200 overflow-hidden"
-                >
-                  <img
-                    alt="User"
-                    className="w-full h-full object-cover"
-                    src={`https://i.pravatar.cc/100?img=${i + 10}`}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-sm">Trusted by 950M+</span>
-              <span className="text-xs text-default-500">
-                Registered Citizens
-              </span>
-            </div>
-          </div>
         </div>
 
         <div className="w-full md:w-1/2 flex justify-center relative z-10">
@@ -91,7 +67,7 @@ export default function IndexPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
             <div className="absolute bottom-6 left-6 text-white pointer-events-none">
               <p className="font-bold text-lg">Sansad Bhavan</p>
-              <p className="text-sm opacity-80">Symbol of Indian Democracy</p>
+              <p className="text-sm opacity-80">The Heart of Indian Democracy</p>
             </div>
           </div>
         </div>
@@ -124,7 +100,7 @@ export default function IndexPage() {
           <div className="mb-20 flex flex-col md:flex-row justify-between items-end gap-6">
             <div className="max-w-2xl">
               <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-                <span className="text-primary">Intelligent</span> <br />
+                <span className="text-primary">Blockchain-Powered</span> <br />
                 Electoral Infrastructure
               </h2>
               <p className="text-xl text-default-500 leading-relaxed">
@@ -181,7 +157,7 @@ export default function IndexPage() {
                   One Nation, One Roll
                 </h3>
                 <p className="text-default-500 text-lg max-w-md">
-                  A unified, real-time voter registry that eliminates
+                  A blockchain-based unified voter registry that eliminates
                   duplication and ensures every citizen is counted, regardless
                   of state boundaries.
                 </p>
@@ -220,7 +196,7 @@ export default function IndexPage() {
                 <div>
                   <h3 className="text-2xl font-bold mb-2">Smart Migration</h3>
                   <p className="text-default-500">
-                    Relocating? Your vote moves with you instantly. No
+                    Relocating? Your vote moves with you instantly via smart contracts. No
                     paperwork, no delays.
                   </p>
                 </div>
@@ -246,9 +222,9 @@ export default function IndexPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-2">Immutable Audit</h3>
+                  <h3 className="text-2xl font-bold mb-2">Blockchain Ledger</h3>
                   <p className="text-default-500">
-                    Every change is recorded on a secure ledger. 100%
+                    Every change is recorded on a secure, immutable ledger. 100%
                     transparent and verifiable.
                   </p>
                 </div>
@@ -263,7 +239,7 @@ export default function IndexPage() {
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                     <span className="text-sm font-medium text-blue-200">
-                      Live Synchronization
+                      Decentralized Synchronization
                     </span>
                   </div>
                   <h3 className="text-3xl font-bold mb-4">
@@ -390,7 +366,7 @@ export default function IndexPage() {
                 <Image
                   alt="Digital Dashboard"
                   className="w-full h-[500px] object-cover hover:scale-105 transition-transform duration-700"
-                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop"
+                  src="https://upload.wikimedia.org/wikipedia/commons/6/68/EVM_VVPAT.jpg"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/20 to-transparent mix-blend-multiply" />
 
@@ -509,7 +485,7 @@ export default function IndexPage() {
             Commitment to Integrity
           </h3>
           <p className="text-lg md:text-xl text-default-800 leading-relaxed mb-10 max-w-2xl mx-auto">
-            The Unified Electoral Roll System is built on the principles of
+            ECTA is built on the principles of
             transparency, privacy, and constitutional alignment. We ensure that
             no personal data is exposed while maintaining a verifiable audit
             trail.

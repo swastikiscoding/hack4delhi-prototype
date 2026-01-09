@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Avatar } from "@heroui/avatar";
 import { Input } from "@heroui/input";
 
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -151,13 +150,6 @@ export default function StateEcDashboard() {
             <Chip className="pl-2" color="danger" size="sm" variant="dot">
               State EC
             </Chip>
-            <Avatar
-              isBordered
-              className="w-8 h-8"
-              color="danger"
-              size="sm"
-              src="https://i.pravatar.cc/150?u=state-ec"
-            />
           </div>
         </div>
       </header>

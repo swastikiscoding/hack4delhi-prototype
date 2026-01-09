@@ -1,87 +1,278 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
-import { Avatar } from "@heroui/avatar";
+import { ethers } from "ethers";
+import { toast } from "sonner";
 
 import { ThemeSwitch } from "@/components/theme-switch";
+import UnifiedElectoralRollABI from "@/abi/UnifiedElectoralRoll.json";
+import { CONTRACT_ADDRESS } from "@/config/blockchain";
+import { api } from "@/lib/api";
+import { getBrowserProvider, getSignerAddress } from "@/lib/wallet";
+import { ASSEMBLY_CONSTITUENCY_MAP } from "@/utils/constituencymap";
 
-// Mock Data
-const requests = [
-  {
-    id: 1,
-    epicHash: "0x3c...9b2",
-    fullHash:
-      "0x3c7f8a9b2d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
-    fromState: "Uttar Pradesh (UP)",
-    toState: "Delhi (DL)",
-    constituency: "New Delhi AC-40",
-    pollingStation: "PS-12, Govt Boys Sr Sec School",
-    timestamp: "2024-01-02 10:30 AM",
-    status: "IN TRANSIT",
-    proofs: [
-      { name: "Rent_Agreement.pdf", date: "2024-01-01" },
-      { name: "Electricity_Bill.pdf", date: "2024-01-01" },
-    ],
-  },
-  {
-    id: 2,
-    epicHash: "0x4a...8c1",
-    fullHash:
-      "0x4a7f8a9b2d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
-    fromState: "Maharashtra (MH)",
-    toState: "Delhi (DL)",
-    constituency: "Chandni Chowk AC-20",
-    pollingStation: "PS-05, Community Centre",
-    timestamp: "2024-01-02 09:15 AM",
-    status: "PENDING",
-    proofs: [{ name: "Aadhaar_Card.pdf", date: "2024-01-02" }],
-  },
-  {
-    id: 3,
-    epicHash: "0x1b...2d4",
-    fullHash:
-      "0x1b7f8a9b2d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
-    fromState: "Karnataka (KA)",
-    toState: "Delhi (DL)",
-    constituency: "East Delhi AC-55",
-    pollingStation: "PS-22, MCD Primary School",
-    timestamp: "2024-01-01 16:45 PM",
-    status: "VERIFIED",
-    proofs: [],
-  },
-  {
-    id: 4,
-    epicHash: "0x9d...4e1",
-    fullHash:
-      "0x9d7f8a9b2d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
-    fromState: "Punjab (PB)",
-    toState: "Delhi (DL)",
-    constituency: "West Delhi AC-30",
-    pollingStation: "PS-10, Govt Girls Sr Sec School",
-    timestamp: "2024-01-01 14:20 PM",
-    status: "REJECTED",
-    proofs: [],
-  },
-  {
-    id: 5,
-    epicHash: "0x2f...1a8",
-    fullHash:
-      "0x2f7f8a9b2d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
-    fromState: "Haryana (HR)",
-    toState: "Delhi (DL)",
-    constituency: "South Delhi AC-45",
-    pollingStation: "PS-15, Community Hall",
-    timestamp: "2024-01-01 11:10 AM",
-    status: "IN TRANSIT",
-    proofs: [],
-  },
-];
+type UiRequest = {
+  id: string;
+  epicHash: string;
+  fullHash: string;
+  fromState: string;
+  toState: string;
+  constituency: string;
+  timestamp: string;
+  status: "PENDING" | "VERIFIED" | "REJECTED" | "IN TRANSIT";
+  proofs: Array<{ name: string; date: string; url?: string }>;
+  toStateNumber: number;
+  toConstituency: number;
+};
 
 export default function BloDashboard() {
-  const [selectedRequest, setSelectedRequest] = useState(requests[0]);
+  const [walletAddress, setWalletAddress] = useState<string>("Connecting...");
+  const [requests, setRequests] = useState<UiRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<UiRequest | null>(
+    null,
+  );
   const [isVerified, setIsVerified] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isActing, setIsActing] = useState(false);
+
+  const pendingCount = useMemo(() => requests.length, [requests]);
+
+  const refresh = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get("/transfers/blo/pending");
+      const raw = response.data?.data || [];
+
+      const mapped: UiRequest[] = raw.map((r: any) => {
+        const short =
+          typeof r.epicHash === "string" && r.epicHash.length > 10
+            ? `${r.epicHash.slice(0, 4)}...${r.epicHash.slice(-3)}`
+            : r.epicHash;
+
+        const toStateName = String(r.toState || "");
+        const toConstituencyNumber = Number(r.toConstituency);
+        const mapForState = (ASSEMBLY_CONSTITUENCY_MAP as Record<string, any>)[
+          toStateName
+        ] as Record<string, number> | undefined;
+
+        let toConstituencyName: string | null = null;
+
+        if (mapForState && Number.isFinite(toConstituencyNumber)) {
+          for (const [name, num] of Object.entries(mapForState)) {
+            if (Number(num) === toConstituencyNumber) {
+              toConstituencyName = name;
+              break;
+            }
+          }
+        }
+
+        return {
+          id: r._id,
+          epicHash: short,
+          fullHash: r.epicHash,
+          fromState: r.fromState,
+          toState: r.toState,
+          constituency: toConstituencyName
+            ? `${toConstituencyName} (${toConstituencyNumber})`
+            : Number.isFinite(toConstituencyNumber)
+              ? `AC-${toConstituencyNumber}`
+              : "-",
+          timestamp: new Date(r.createdAt).toLocaleString(),
+          status: "PENDING",
+          proofs: [
+            {
+              name: "Address Proof (PDF)",
+              url: r.proof,
+              date: new Date(r.createdAt).toLocaleDateString(),
+            },
+          ],
+          toStateNumber: Number(r.toStateNumber),
+          toConstituency: Number(r.toConstituency),
+        };
+      });
+
+      setRequests(mapped);
+      setSelectedRequest((prev) => {
+        if (!mapped.length) return null;
+        if (!prev) return mapped[0];
+        const stillThere = mapped.find((x) => x.id === prev.id);
+
+        return stillThere || mapped[0];
+      });
+    } catch (e) {
+      void e;
+      setRequests([]);
+      setSelectedRequest(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  useEffect(() => {
+    const loadWallet = async () => {
+      try {
+        const addr = await getSignerAddress();
+
+        setWalletAddress(addr);
+      } catch {
+        setWalletAddress("Not Connected");
+      }
+    };
+
+    void loadWallet();
+  }, []);
+
+  const verifyOnChainAndPersist = async () => {
+    if (!selectedRequest) return;
+    setIsActing(true);
+    try {
+      const provider = await getBrowserProvider();
+      const signer = await provider.getSigner();
+      const bloAddress = await signer.getAddress();
+
+      // Quick balance check (estimateGas failures are confusing when balance is 0)
+      const balance = await provider.getBalance(bloAddress);
+
+      if (balance === 0n) {
+        toast.error(
+          "This wallet has 0 Sepolia ETH. Fund it first to sign transactions.",
+        );
+
+        return;
+      }
+
+      const contract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        UnifiedElectoralRollABI,
+        signer,
+      );
+
+      // Preflight: decide whether we should request migration or only verify.
+      // Contract Status enum: NONE=0, ACTIVE=1, IN_TRANSIT=2
+      let shouldRequestMigration = false;
+      let requestMigrationTxHash: string | undefined;
+
+      try {
+        const exists = await contract.exists(selectedRequest.fullHash);
+
+        if (!exists) {
+          toast.error(
+            "This voter is not registered on-chain yet (exists=false). An ERO must call registerVoter on the contract first.",
+          );
+
+          return;
+        }
+
+        const voter = await contract.getVoter(selectedRequest.fullHash);
+        const status = Number(voter[2]);
+
+        if (status === 1) {
+          // ACTIVE: migration has not been started on-chain
+          shouldRequestMigration = true;
+        } else if (status === 2) {
+          // IN_TRANSIT: migration already started on-chain; BLO can only verify
+          const migration = await contract.getMigration(
+            selectedRequest.fullHash,
+          );
+          const toStateOnChain = Number(migration[1]);
+          const toConstituencyOnChain = Number(migration[2]);
+          const decisionOnChain = Number(migration[4]);
+
+          if (decisionOnChain !== 0) {
+            toast.error(
+              `This migration is already decided on-chain (decision=${decisionOnChain}). Ask the ERO to resolve it before verifying again.`,
+            );
+
+            return;
+          }
+
+          if (
+            toStateOnChain !== selectedRequest.toStateNumber ||
+            toConstituencyOnChain !== selectedRequest.toConstituency
+          ) {
+            toast.error(
+              `On-chain migration target doesn't match this DB request. On-chain: state=${toStateOnChain}, constituency=${toConstituencyOnChain}. DB: state=${selectedRequest.toStateNumber}, constituency=${selectedRequest.toConstituency}.`,
+            );
+
+            return;
+          }
+
+          shouldRequestMigration = false;
+        } else {
+          toast.error(
+            `Voter is not eligible for verification right now (status=${status}). Expected ACTIVE (1) or IN_TRANSIT (2).`,
+          );
+
+          return;
+        }
+      } catch (e) {
+        void e;
+      }
+
+      if (shouldRequestMigration) {
+        const tx1 = await contract.requestMigration(
+          selectedRequest.fullHash,
+          selectedRequest.toStateNumber,
+          selectedRequest.toConstituency,
+        );
+
+        await tx1.wait();
+        requestMigrationTxHash = tx1.hash;
+      }
+
+      const tx2 = await contract.verifyByBLO(selectedRequest.fullHash);
+
+      await tx2.wait();
+
+      await api.post(`/transfers/${selectedRequest.id}/blo/verified`, {
+        bloAddress,
+        requestMigrationTxHash,
+        bloTxHash: tx2.hash,
+      });
+
+      toast.success("BLO verification completed successfully!");
+      setIsVerified(false);
+      await refresh();
+    } catch (e: any) {
+      void e;
+      const message =
+        e?.reason ||
+        e?.shortMessage ||
+        e?.info?.error?.message ||
+        e?.message ||
+        "BLO verification failed";
+
+      toast.error(message);
+    } finally {
+      setIsActing(false);
+    }
+  };
+
+  const rejectOffChain = async () => {
+    if (!selectedRequest) return;
+    setIsActing(true);
+    try {
+      const bloAddress = await getSignerAddress();
+
+      await api.post(`/transfers/${selectedRequest.id}/blo/reject`, {
+        bloAddress,
+      });
+      toast.success("Request rejected successfully");
+      setIsVerified(false);
+      await refresh();
+    } catch (e: any) {
+      void e;
+      toast.error(e?.message || "BLO reject failed");
+    } finally {
+      setIsActing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 font-sans text-foreground">
@@ -93,7 +284,7 @@ export default function BloDashboard() {
               BLO Verification Dashboard
             </h1>
             <p className="text-xs text-default-500">
-              Unified Electoral Roll System – Official Portal
+              ECTA – Official Portal
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -109,16 +300,12 @@ export default function BloDashboard() {
             <div className="flex items-center gap-2 px-3 py-1.5 bg-default-100 rounded-full border border-default-200">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs font-mono text-default-600">
-                0x12...89A
+                {walletAddress === "Connecting..." ||
+                walletAddress === "Not Connected"
+                  ? walletAddress
+                  : `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
               </span>
             </div>
-            <Avatar
-              isBordered
-              className="w-8 h-8"
-              color="primary"
-              size="sm"
-              src="https://i.pravatar.cc/150?u=blo"
-            />
           </div>
         </div>
       </header>
@@ -151,7 +338,7 @@ export default function BloDashboard() {
         </Card>
 
         {/* 3. Metrics Summary Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <Card className="border border-default-200 shadow-sm">
             <CardBody className="p-6">
               <div className="flex justify-between items-start mb-2">
@@ -167,30 +354,9 @@ export default function BloDashboard() {
                   High Priority
                 </Chip>
               </div>
-              <h3 className="text-3xl font-bold text-foreground">12</h3>
-            </CardBody>
-          </Card>
-          <Card className="border border-default-200 shadow-sm">
-            <CardBody className="p-6">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm font-medium text-default-500">
-                  Verified Today
-                </p>
-                <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                  +2 from yesterday
-                </span>
-              </div>
-              <h3 className="text-3xl font-bold text-foreground">45</h3>
-            </CardBody>
-          </Card>
-          <Card className="border border-default-200 shadow-sm">
-            <CardBody className="p-6">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm font-medium text-default-500">
-                  Avg. Verification Time
-                </p>
-              </div>
-              <h3 className="text-3xl font-bold text-foreground">2.5h</h3>
+              <h3 className="text-3xl font-bold text-foreground">
+                {isLoading ? "…" : pendingCount}
+              </h3>
             </CardBody>
           </Card>
         </div>
@@ -256,67 +422,87 @@ export default function BloDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-default-200">
-                    {requests.map((req) => (
-                      <tr
-                        key={req.id}
-                        className={`cursor-pointer transition-colors hover:bg-default-100 ${selectedRequest.id === req.id ? "bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-l-blue-500" : ""}`}
-                        onClick={() => {
-                          setSelectedRequest(req);
-                          setIsVerified(false);
-                        }}
-                      >
-                        <td className="px-6 py-4 font-mono text-default-600">
-                          {req.epicHash}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">
-                              {req.fromState.split(" ")[0]}
-                            </span>
-                            <svg
-                              className="w-3 h-3 text-default-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                d="M17 8l4 4m0 0l-4 4m4-4H3"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                              />
-                            </svg>
-                            <span className="font-medium">
-                              {req.toState.split(" ")[0]}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-default-600">
-                          {req.constituency}
-                        </td>
-                        <td className="px-6 py-4 text-default-500 whitespace-nowrap">
-                          {req.timestamp}
-                        </td>
-                        <td className="px-6 py-4">
-                          <Chip
-                            className="capitalize"
-                            color={
-                              req.status === "IN TRANSIT"
-                                ? "warning"
-                                : req.status === "VERIFIED"
-                                  ? "success"
-                                  : req.status === "REJECTED"
-                                    ? "danger"
-                                    : "default"
-                            }
-                            size="sm"
-                            variant="flat"
-                          >
-                            {req.status.toLowerCase().replace("_", " ")}
-                          </Chip>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          className="px-6 py-8 text-center text-default-500"
+                          colSpan={5}
+                        >
+                          Loading requests…
                         </td>
                       </tr>
-                    ))}
+                    ) : requests.length === 0 ? (
+                      <tr>
+                        <td
+                          className="px-6 py-8 text-center text-default-500"
+                          colSpan={5}
+                        >
+                          No pending requests.
+                        </td>
+                      </tr>
+                    ) : (
+                      requests.map((req) => (
+                        <tr
+                          key={req.id}
+                          className={`cursor-pointer transition-colors hover:bg-default-100 ${selectedRequest?.id === req.id ? "bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-l-blue-500" : ""}`}
+                          onClick={() => {
+                            setSelectedRequest(req);
+                            setIsVerified(false);
+                          }}
+                        >
+                          <td className="px-6 py-4 font-mono text-default-600">
+                            {req.epicHash}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {req.fromState.split(" ")[0]}
+                              </span>
+                              <svg
+                                className="w-3 h-3 text-default-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                />
+                              </svg>
+                              <span className="font-medium">
+                                {req.toState.split(" ")[0]}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-default-600">
+                            {req.constituency}
+                          </td>
+                          <td className="px-6 py-4 text-default-500 whitespace-nowrap">
+                            {req.timestamp}
+                          </td>
+                          <td className="px-6 py-4">
+                            <Chip
+                              className="capitalize"
+                              color={
+                                req.status === "IN TRANSIT"
+                                  ? "warning"
+                                  : req.status === "VERIFIED"
+                                    ? "success"
+                                    : req.status === "REJECTED"
+                                      ? "danger"
+                                      : "default"
+                              }
+                              size="sm"
+                              variant="flat"
+                            >
+                              {req.status.toLowerCase().replace("_", " ")}
+                            </Chip>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -349,7 +535,7 @@ export default function BloDashboard() {
                     EPIC Hash
                   </p>
                   <div className="p-3 bg-default-100 rounded-lg break-all font-mono text-xs text-default-700 border border-default-200">
-                    {selectedRequest.fullHash}
+                    {selectedRequest?.fullHash || "-"}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4">
@@ -358,7 +544,7 @@ export default function BloDashboard() {
                         Current State
                       </p>
                       <p className="font-medium text-default-900 mt-1">
-                        {selectedRequest.fromState}
+                        {selectedRequest?.fromState || "-"}
                       </p>
                     </div>
                     <div>
@@ -366,7 +552,7 @@ export default function BloDashboard() {
                         Requested State
                       </p>
                       <p className="font-medium text-default-900 mt-1">
-                        {selectedRequest.toState}
+                        {selectedRequest?.toState || "-"}
                       </p>
                     </div>
                   </div>
@@ -380,37 +566,8 @@ export default function BloDashboard() {
                     Target Constituency
                   </p>
                   <p className="font-medium text-lg text-default-900">
-                    {selectedRequest.constituency}
+                    {selectedRequest?.constituency || "-"}
                   </p>
-                  <div className="flex items-start gap-2 mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-                    <svg
-                      className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
-                      <path
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                        Assigned Polling Station
-                      </p>
-                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                        {selectedRequest.pollingStation}
-                      </p>
-                    </div>
-                  </div>
                 </div>
 
                 <Divider />
@@ -421,11 +578,11 @@ export default function BloDashboard() {
                     Uploaded Proofs
                   </p>
                   <div className="space-y-2">
-                    {selectedRequest.proofs.length > 0 ? (
+                    {selectedRequest?.proofs?.length ? (
                       selectedRequest.proofs.map((proof, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center gap-3 p-3 border border-default-200 rounded-lg hover:bg-default-50 transition-colors cursor-pointer"
+                          className="flex items-center gap-3 p-3 border border-default-200 rounded-lg hover:bg-default-50 transition-colors"
                         >
                           <div className="p-2 bg-red-50 text-red-500 rounded">
                             <svg
@@ -449,6 +606,16 @@ export default function BloDashboard() {
                             <p className="text-xs text-default-500">
                               {proof.date}
                             </p>
+                            {proof.url && (
+                              <a
+                                className="text-xs text-primary underline"
+                                href={proof.url}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                View PDF
+                              </a>
+                            )}
                           </div>
                         </div>
                       ))
@@ -495,10 +662,21 @@ export default function BloDashboard() {
                   <Button
                     className="w-full font-semibold shadow-lg shadow-primary/20"
                     color="primary"
-                    isDisabled={!isVerified}
+                    isDisabled={!isVerified || !selectedRequest || isActing}
                     size="lg"
+                    onPress={verifyOnChainAndPersist}
                   >
-                    Verify Address
+                    {isActing ? "Processing…" : "Verify Address"}
+                  </Button>
+                  <Button
+                    className="w-full font-semibold"
+                    color="danger"
+                    isDisabled={!selectedRequest || isActing}
+                    size="lg"
+                    variant="flat"
+                    onPress={rejectOffChain}
+                  >
+                    Reject Request
                   </Button>
                   <p className="text-xs text-center text-default-400">
                     This action will create a blockchain transaction and cannot
@@ -515,7 +693,7 @@ export default function BloDashboard() {
                         Migration Requested
                       </p>
                       <p className="text-xs text-default-500">
-                        Completed • {selectedRequest.timestamp}
+                        Completed • {selectedRequest?.timestamp || "-"}
                       </p>
                     </div>
                     <div className="relative">

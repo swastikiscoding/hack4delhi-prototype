@@ -51,7 +51,7 @@ export default function LoginPage() {
                 </div>
                 <h2 className="text-3xl font-bold mb-4">Welcome Back</h2>
                 <p className="text-default-500 text-lg max-w-xs mx-auto">
-                  Secure access to India&apos;s Unified Electoral Roll System.
+                  Secure access to ECTA.
                 </p>
               </div>
               {/* Decorative circles */}

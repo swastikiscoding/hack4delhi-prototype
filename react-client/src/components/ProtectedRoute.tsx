@@ -1,158 +1,203 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
 
-import UnifiedElectoralRollABI from "../abi/UnifiedElectoralRoll.json";
-
-const CONTRACT_ADDRESS = "0xa394e56d184a5f9FdCe0cE2fe7341e0E9de9560E";
-const ECI_ROLE = ethers.id("ECI_ROLE");
-const SEPOLIA_CHAIN_ID_HEX = "0xaa36a7";
+import UnifiedElectoralRollABI from "@/abi/UnifiedElectoralRoll.json";
+import { CONTRACT_ADDRESS, ROLE_IDS } from "@/config/blockchain";
+import { ensureSepolia } from "@/lib/wallet";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-interface ProtectedRouteProps {
+type RoleKey = keyof typeof ROLE_IDS;
+
+interface RoleProtectedRouteProps {
   children: React.ReactNode;
+  role: RoleKey;
+  /** If true, require an explicit disconnect+reconnect flow before role check. */
+  forceReconnect?: boolean;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+type GuardStage =
+  | "checkingConnection"
+  | "needsConnection"
+  | "needsReconnect"
+  | "checkingRole"
+  | "authorized"
+  | "unauthorized"
+  | "error";
+
+export const RoleProtectedRoute = ({
+  children,
+  role,
+  forceReconnect = false,
+}: RoleProtectedRouteProps) => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [stage, setStage] = useState<GuardStage>("checkingConnection");
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
-  useEffect(() => {
-    let mounted = true;
+  // React 18 StrictMode runs effects twice in dev; this ref prevents double MetaMask prompts.
+  const isCheckingRef = useRef(false);
 
-    let isChecking = false;
+  const roleId = useMemo(() => ROLE_IDS[role], [role]);
 
-    const getChainIdHex = async () => {
-      return (await window.ethereum.request({ method: "eth_chainId" })) as string;
-    };
+  const checkRole = useCallback(async () => {
+    if (isCheckingRef.current) return;
+    isCheckingRef.current = true;
+    setErrorMessage("");
+    setStage("checkingRole");
 
-    const ensureSepolia = async () => {
-      const chainIdHex = await getChainIdHex();
-
-      if (chainIdHex?.toLowerCase() === SEPOLIA_CHAIN_ID_HEX) return;
-
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: SEPOLIA_CHAIN_ID_HEX }],
-      });
-
-      // Wait for MetaMask to actually finish switching chains.
-      for (let attempt = 0; attempt < 20; attempt++) {
-        const newChainIdHex = await getChainIdHex();
-        if (newChainIdHex?.toLowerCase() === SEPOLIA_CHAIN_ID_HEX) return;
-        await sleep(150);
+    try {
+      if (!window.ethereum) {
+        setStage("error");
+        setErrorMessage("MetaMask is not installed.");
+        return;
       }
 
-      throw new Error("Timed out waiting for Sepolia network switch");
-    };
+      // Network switch can require user gesture; by this point we already have one.
+      await ensureSepolia();
 
-    const checkAuth = async () => {
-      if (isChecking) return;
-      isChecking = true;
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      const contract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        UnifiedElectoralRollABI,
+        provider,
+      );
+
+      const hasRole = await contract.hasRole(roleId, userAddress);
+
+      if (hasRole) {
+        setStage("authorized");
+      } else {
+        setStage("unauthorized");
+        navigate("/");
+      }
+    } catch (e: any) {
+      console.error("Authorization check failed", e);
+      setStage("error");
+      setErrorMessage(e?.reason || e?.message || "Failed to verify wallet role");
+    } finally {
+      isCheckingRef.current = false;
+    }
+  }, [navigate, roleId]);
+
+  const connectAndCheck = useCallback(async () => {
+    setErrorMessage("");
+    try {
+      if (!window.ethereum?.request) {
+        setStage("error");
+        setErrorMessage("MetaMask is not installed.");
+        return;
+      }
+
+      setStage("checkingConnection");
+
+      if (forceReconnect) {
+        // Best-effort disconnect. MetaMask may prompt the user.
+        try {
+          await window.ethereum.request({
+            method: "wallet_revokePermissions",
+            params: [{ eth_accounts: {} }],
+          });
+        } catch (e) {
+          // Some MetaMask versions don't support revoke; fall back to just requesting accounts.
+          console.warn("wallet_revokePermissions failed/unsupported:", e);
+        }
+      }
 
       try {
-        if (!window.ethereum) {
-          console.error("MetaMask not installed");
-          alert("Please install MetaMask to access this page.");
-          if (mounted) navigate("/");
+        const accounts = (await window.ethereum.request({
+          method: "eth_requestAccounts",
+        })) as string[];
 
+        // MetaMask allows selecting multiple accounts. For officer portals we
+        // enforce exactly one to avoid ambiguity about which account has the role.
+        if (!accounts || accounts.length !== 1) {
+          setStage("needsReconnect");
+          setErrorMessage(
+            "MetaMask allowed multiple accounts to connect. Please select exactly ONE account in the MetaMask popup, then click again.",
+          );
+          return;
+        }
+      } catch (e: any) {
+        if (e?.code === -32002) {
+          setStage(forceReconnect ? "needsReconnect" : "needsConnection");
+          setErrorMessage(
+            "A MetaMask request is already pending. Open MetaMask and complete it, then click Connect again.",
+          );
+          return;
+        }
+        if (e?.code === 4001) {
+          setStage(forceReconnect ? "needsReconnect" : "needsConnection");
+          setErrorMessage("Connection request was rejected.");
+          return;
+        }
+        throw e;
+      }
+
+      await checkRole();
+    } catch (e: any) {
+      console.error("Connect failed", e);
+      setStage("error");
+      setErrorMessage(e?.message || "Failed to connect wallet");
+    }
+  }, [checkRole]);
+
+  useEffect(() => {
+    // On mount: just detect whether we already have a connected account.
+    const detectConnection = async () => {
+      try {
+        if (!window.ethereum?.request) {
+          setStage("error");
+          setErrorMessage("MetaMask is not installed.");
           return;
         }
 
-        // 1) Ensure we are connected (persisted connections show up here)
-        let accounts = (await window.ethereum.request({
+        const accounts = (await window.ethereum.request({
           method: "eth_accounts",
         })) as string[];
 
         if (!accounts || accounts.length === 0) {
-          try {
-            accounts = (await window.ethereum.request({
-              method: "eth_requestAccounts",
-            })) as string[];
-          } catch (error) {
-            console.error("User rejected connection", error);
-            if (mounted) navigate("/");
-            return;
-          }
-        }
-
-        // 2) Ensure Sepolia (switch + wait). Chain changes often emit events; do NOT reload.
-        try {
-          await ensureSepolia();
-        } catch (switchError: any) {
-          console.error("Failed to switch network", switchError);
-          if (switchError?.code === 4902) {
-            alert("Please add Sepolia Testnet to your MetaMask.");
-          } else {
-            alert("Please switch to Sepolia Testnet.");
-          }
-          if (mounted) navigate("/");
+          setStage("needsConnection");
           return;
         }
 
-        const provider = new ethers.BrowserProvider(window.ethereum);
-
-        // MetaMask may briefly return stale accounts during chain switches; prefer getSigner.
-        const signer = await provider.getSigner();
-        const userAddress = await signer.getAddress();
-
-        console.log("Checking role for:", userAddress);
-
-        const contract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          UnifiedElectoralRollABI,
-          provider,
-        );
-
-        const hasRole = await contract.hasRole(ECI_ROLE, userAddress);
-
-        console.log("Has ECI_ROLE:", hasRole);
-
-        if (mounted) {
-          if (hasRole) {
-            setIsAuthorized(true);
-          } else {
-            console.error("User does not have ECI_ROLE");
-            alert(
-              "Access Denied: Your account is not authorized as an ECI official.",
-            );
-            navigate("/");
-          }
+        if (accounts.length !== 1) {
+          setStage("needsReconnect");
+          setErrorMessage(
+            "Multiple MetaMask accounts are connected to this site. Disconnect & reconnect, selecting exactly ONE account.",
+          );
+          return;
         }
-      } catch (error) {
-        console.error("Error checking authorization:", error);
-        if (mounted) navigate("/");
-      } finally {
-        if (mounted) setIsLoading(false);
-        isChecking = false;
+
+        if (forceReconnect) {
+          setStage("needsReconnect");
+          return;
+        }
+
+        await checkRole();
+      } catch (e: any) {
+        console.error("Wallet detection failed", e);
+        setStage("error");
+        setErrorMessage(e?.message || "Failed to detect wallet");
       }
     };
 
-    checkAuth();
+    void detectConnection();
 
-    // Listen for account/network changes without reloading (reload causes flapping)
     const handleAccountsChanged = (accounts: string[]) => {
-      if (!mounted) return;
-      setIsAuthorized(false);
-      setIsLoading(true);
-
       if (!accounts || accounts.length === 0) {
+        setStage("needsConnection");
         navigate("/");
         return;
       }
-
-      // Re-check authorization for the new account.
-      void checkAuth();
+      void checkRole();
     };
 
-    const handleChainChanged = (_chainId: string) => {
-      if (!mounted) return;
-      setIsAuthorized(false);
-      setIsLoading(true);
-      // Give MetaMask a moment to settle before re-check.
-      void sleep(200).then(checkAuth);
+    const handleChainChanged = () => {
+      void sleep(200).then(checkRole);
     };
 
     if (window.ethereum) {
@@ -161,28 +206,57 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }
 
     return () => {
-      mounted = false;
       if (window.ethereum) {
-        window.ethereum.removeListener(
-          "accountsChanged",
-          handleAccountsChanged,
-        );
+        window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
         window.ethereum.removeListener("chainChanged", handleChainChanged);
       }
     };
-  }, [navigate]);
+  }, [checkRole, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-xl font-bold">
-          Connecting to Wallet & Verifying Access...
-        </div>
+  if (stage === "authorized") return <>{children}</>;
+
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="flex flex-col items-center gap-4">
+        <div className="text-xl font-bold">Connecting to Wallet & Verifying Access...</div>
+
+        {stage === "needsConnection" ? (
+          <button
+            className="px-4 py-2 rounded-lg bg-primary text-white font-semibold"
+            onClick={() => void connectAndCheck()}
+            type="button"
+          >
+            Connect MetaMask
+          </button>
+        ) : null}
+
+        {stage === "needsReconnect" ? (
+          <button
+            className="px-4 py-2 rounded-lg bg-primary text-white font-semibold"
+            onClick={() => void connectAndCheck()}
+            type="button"
+          >
+            Disconnect & Reconnect MetaMask
+          </button>
+        ) : null}
+
+        {stage === "checkingRole" || stage === "checkingConnection" ? (
+          <div className="text-sm text-default-500">Waiting for wallet…</div>
+        ) : null}
+
+        {stage === "error" || errorMessage ? (
+          <div className="text-sm text-danger max-w-lg text-center">
+            {errorMessage}
+          </div>
+        ) : null}
       </div>
-    );
-  }
-
-  return isAuthorized ? <>{children}</> : null;
+    </div>
+  );
 };
+
+// Back-compat: existing imports protect ECI routes.
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => (
+  <RoleProtectedRoute role="ECI">{children}</RoleProtectedRoute>
+);
 
 export default ProtectedRoute;

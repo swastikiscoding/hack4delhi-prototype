@@ -120,13 +120,6 @@ export default function CitizenProfile() {
                     {voter.constituency_name}
                   </p>
                 </div>
-
-                <div>
-                  <p className="text-xs text-default-400 uppercase font-semibold mb-1">
-                    Part Number
-                  </p>
-                  <p className="text-lg font-medium">{voter.part_number}</p>
-                </div>
               </div>
 
               {/* QR Code Section */}

@@ -4,6 +4,9 @@ import cookieParser from 'cookie-parser';
 import { ApiResponse } from './utils/ApiResponse.js';
 import { voterRouter } from './routes/voter.route.js';
 import { blockchainRouter } from './routes/blockchain.route.js';
+import { transferRouter } from './routes/transfer.route.js';
+import { metaRouter } from './routes/meta.route.js';
+import { uploadRouter } from './routes/upload.route.js';
 
 const app = express();
 
@@ -19,6 +22,9 @@ app.use(cors({
 // Routes
 app.use('/api/v1/voters', voterRouter);
 app.use('/api/v1/blockchain', blockchainRouter);
+app.use('/api/v1/transfers', transferRouter);
+app.use('/api/v1/meta', metaRouter);
+app.use('/api/v1/uploads', uploadRouter);
 
 app.get('/', (req, res) => {
   res.json(new ApiResponse(200, {}, 'API is running successfully'));

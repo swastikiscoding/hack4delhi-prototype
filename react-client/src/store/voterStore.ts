@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import axios from "axios";
+import { api, authHeaders } from "@/lib/api";
 
 interface Voter {
   _id: string;
@@ -11,6 +11,8 @@ interface Voter {
   address: string;
   constituency_number: string;
   constituency_name: string;
+  state?: string;
+  state_number?: number;
   part_number: string;
   part_name: string;
   polling_station: string;
@@ -42,10 +44,7 @@ export const useVoterStore = create<VoterState>()(
       login: async (epicId, password) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.post(
-            "http://localhost:8000/api/v1/voters/login",
-            { epicId, password },
-          );
+          const response = await api.post("/voters/login", { epicId, password });
 
           const { user, accessToken } = response.data.data;
 
@@ -70,14 +69,9 @@ export const useVoterStore = create<VoterState>()(
 
         set({ isLoading: true, error: null });
         try {
-          const response = await axios.get(
-            "http://localhost:8000/api/v1/voters/profile",
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            },
-          );
+          const response = await api.get("/voters/profile", {
+            headers: authHeaders(accessToken),
+          });
 
           set({
             voter: response.data.data,
@@ -108,13 +102,11 @@ export const useVoterStore = create<VoterState>()(
 
         try {
           if (accessToken) {
-            await axios.post(
-              "http://localhost:8000/api/v1/voters/logout",
+            await api.post(
+              "/voters/logout",
               {},
               {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                },
+                headers: authHeaders(accessToken),
               },
             );
           }

@@ -30,34 +30,39 @@ export default function CitizenDashboard() {
         {/* Welcome Card */}
         <Card className="w-full bg-gradient-to-r from-blue-900 to-slate-900 text-white border-none shadow-xl">
           <CardBody className="p-8 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-6">
-              <Avatar
-                isBordered
-                className="w-20 h-20 text-large"
-                color="primary"
-                src={
-                  voter.photo ||
-                  "https://i.pravatar.cc/150?u=a04258114e29026708c"
-                }
-              />
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-2xl font-bold">
-                    Welcome back, {voter.name}
-                  </h1>
+            <div className="flex items-center gap-6 w-full md:w-auto">
+              <div className="relative">
+                <Avatar
+                  className="w-24 h-24 text-large border-4 border-white/20"
+                  isBordered
+                  src={
+                    voter.photo ||
+                    "https://i.pravatar.cc/150?u=a04258114e29026708c"
+                  }
+                />
+                <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-4 border-blue-900 rounded-full" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-3xl font-bold">{voter.name}</h2>
                   <Chip
-                    className="bg-green-500/20 text-green-300 border-green-500/30"
+                    className="border-white/30 text-white"
                     color="success"
-                    variant="flat"
+                    size="sm"
+                    variant="dot"
                   >
-                    Active Voter
+                    Verified Voter
                   </Chip>
                 </div>
-                <p className="text-blue-200 font-mono">
-                  EPIC ID: {voter.epicId}
+                <p className="text-blue-200 text-lg font-mono tracking-wider">
+                  {voter.epicId}
+                </p>
+                <p className="text-blue-300 text-sm">
+                  {voter.constituency_name} • {voter.state || "Delhi"}
                 </p>
               </div>
             </div>
+
             <Button
               className="bg-white text-blue-900 font-semibold shadow-lg"
               endContent={
@@ -146,9 +151,6 @@ export default function CitizenDashboard() {
                 <h3 className="text-lg font-bold text-foreground">
                   {voter.constituency_name}
                 </h3>
-                <p className="text-xs text-default-400">
-                  Part {voter.part_number}, Station {voter.polling_station}
-                </p>
               </div>
             </CardBody>
           </Card>
@@ -289,58 +291,62 @@ export default function CitizenDashboard() {
             </div>
           </div>
 
-          {/* Side Card: Polling Station */}
-          <div className="flex flex-col gap-4">
-            <h3 className="text-xl font-bold text-foreground">
-              Polling Station
-            </h3>
-            <Card className="h-full border border-default-200 shadow-sm">
-              <CardBody className="p-0 flex flex-col h-full">
-                <div className="h-48 bg-default-100 relative">
-                  {/* Map Placeholder */}
-                  <div className="absolute inset-0 flex items-center justify-center text-default-400 bg-default-200/50">
-                    <span className="flex items-center gap-2">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-1.447-.894L15 7m0 13V7"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                      Map View
-                    </span>
+          {/* Side Card: Polling Station (hidden when not available from DB) */}
+          {voter?.polling_station && (
+            <div className="flex flex-col gap-4">
+              <h3 className="text-xl font-bold text-foreground">
+                Polling Station
+              </h3>
+              <Card className="h-full border border-default-200 shadow-sm">
+                <CardBody className="p-0 flex flex-col h-full">
+                  <div className="h-48 bg-default-100 relative">
+                    {/* Map Placeholder */}
+                    <div className="absolute inset-0 flex items-center justify-center text-default-400 bg-default-200/50">
+                      <span className="flex items-center gap-2">
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-1.447-.894L15 7m0 13V7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                        Map View
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="p-6 flex flex-col gap-4 flex-grow">
-                  <div>
-                    <h4 className="font-bold text-lg">
-                      {voter.polling_station}
-                    </h4>
-                    <p className="text-default-500 text-sm">
-                      {voter.part_name}
-                    </p>
+                  <div className="p-6 flex flex-col gap-4 flex-grow">
+                    <div>
+                      <h4 className="font-bold text-lg">
+                        {voter.polling_station}
+                      </h4>
+                      {voter.part_name && (
+                        <p className="text-default-500 text-sm">
+                          {voter.part_name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-auto">
+                      <Chip size="sm" variant="flat">
+                        Wheelchair Accessible
+                      </Chip>
+                      <Chip size="sm" variant="flat">
+                        Parking Available
+                      </Chip>
+                    </div>
+                    <Button className="w-full" variant="bordered">
+                      Get Directions
+                    </Button>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-auto">
-                    <Chip size="sm" variant="flat">
-                      Wheelchair Accessible
-                    </Chip>
-                    <Chip size="sm" variant="flat">
-                      Parking Available
-                    </Chip>
-                  </div>
-                  <Button className="w-full" variant="bordered">
-                    Get Directions
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
-          </div>
+                </CardBody>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </CitizenLayout>
