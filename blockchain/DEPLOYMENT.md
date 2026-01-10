@@ -1,11 +1,6 @@
-## Final Sepolia Deployment (Hackathon – Frozen)
+## Final Deployment (Sepolia)
 
-- Contract Name: UnifiedElectoralRoll
-- Network: Sepolia Testnet
-- Contract Address: 0xa394e56d184a5f9FdCe0cE2fe7341e0E9de9560E
-- RPC Provider: Alchemy
-- Explorer: https://sepolia.etherscan.io/address/0xa394e56d184a5f9FdCe0cE2fe7341e0E9de9560E
-- Verification: ✅ Verified
-- Status: ❄️ Frozen for frontend/backend integration
-
-This deployment represents the final blockchain logic used for the hackathon demo.
+- Contract: UnifiedElectoralRoll
+- Address: 0x7e336F90F55330631767D398b8efaF84A70E2FaF
+- Network: Sepolia (11155111)
+- Status: Verified on Etherscan
