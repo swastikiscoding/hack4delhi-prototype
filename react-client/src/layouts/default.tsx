@@ -16,9 +16,7 @@ export default function DefaultLayout({
       <footer className="w-full py-12 border-t border-default-200 bg-default-50 mt-12">
         <div className="container mx-auto max-w-7xl px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col gap-2">
-            <p className="font-bold text-lg text-foreground">
-              ECTA
-            </p>
+            <p className="font-bold text-lg text-foreground">ECTA</p>
             <p className="text-sm text-default-500">
               Inspired by the Election Commission of India
             </p>

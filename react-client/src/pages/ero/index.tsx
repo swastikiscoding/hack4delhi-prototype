@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Input } from "@heroui/input";
+import { Spinner } from "@heroui/spinner";
 import {
   Modal,
   ModalContent,
@@ -11,15 +13,14 @@ import {
   ModalFooter,
   useDisclosure,
 } from "@heroui/modal";
-
-import { ThemeSwitch } from "@/components/theme-switch";
 import { ethers } from "ethers";
 import { toast } from "sonner";
 
+import { ThemeSwitch } from "@/components/theme-switch";
 import UnifiedElectoralRollABI from "@/abi/UnifiedElectoralRoll.json";
-import { CONTRACT_ADDRESS } from "@/config/blockchain";
+import { CONTRACT_ADDRESS, ROLE_IDS } from "@/config/blockchain";
 import { api } from "@/lib/api";
-import { getBrowserProvider, getSignerAddress } from "@/lib/wallet";
+import { getBrowserProvider } from "@/lib/wallet";
 import { ASSEMBLY_CONSTITUENCY_MAP } from "@/utils/constituencymap";
 
 type UiRequest = {
@@ -41,15 +42,17 @@ type UiRequest = {
 };
 
 export default function EroDashboard() {
+  const navigate = useNavigate();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  const [selectedRequest, setSelectedRequest] = useState<
-    UiRequest | null
-  >(null);
+  const [selectedRequest, setSelectedRequest] = useState<UiRequest | null>(
+    null,
+  );
   const [filter, setFilter] = useState("ALL"); // ALL, PENDING, APPROVED, REJECTED
-  const [walletAddress, setWalletAddress] = useState<string>("Connecting...");
+  const [walletAddress, setWalletAddress] = useState<string>("");
   const [requests, setRequests] = useState<UiRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isActing, setIsActing] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   const pendingCount = useMemo(
     () =>
@@ -82,12 +85,12 @@ export default function EroDashboard() {
 
         const toStateName = String(r.toState || "");
         const toConstituencyNumber = Number(r.toConstituency);
-        const mapForState =
-          (ASSEMBLY_CONSTITUENCY_MAP as Record<string, Record<string, number>>)[
-            toStateName
-          ];
+        const mapForState = (
+          ASSEMBLY_CONSTITUENCY_MAP as Record<string, Record<string, number>>
+        )[toStateName];
 
         let toConstituencyName: string | null = null;
+
         if (mapForState && Number.isFinite(toConstituencyNumber)) {
           for (const [name, num] of Object.entries(mapForState)) {
             if (Number(num) === toConstituencyNumber) {
@@ -112,13 +115,17 @@ export default function EroDashboard() {
           bloStatus:
             r.status === "BLO_REJECTED"
               ? "REJECTED"
-              : r.status === "BLO_VERIFIED" || r.status === "ERO_REJECTED" || r.status === "ERO_APPROVED"
+              : r.status === "BLO_VERIFIED" ||
+                  r.status === "ERO_REJECTED" ||
+                  r.status === "ERO_APPROVED"
                 ? "VERIFIED"
                 : "PENDING",
           timestamp: new Date(r.createdAt).toLocaleString(),
           status,
           bloId: r.bloAddress || null,
-          bloVerifiedAt: r.bloVerifiedAt ? new Date(r.bloVerifiedAt).toLocaleString() : null,
+          bloVerifiedAt: r.bloVerifiedAt
+            ? new Date(r.bloVerifiedAt).toLocaleString()
+            : null,
           proof: r.proof,
           toStateNumber: Number(r.toStateNumber),
           toConstituency: Number(r.toConstituency),
@@ -138,16 +145,35 @@ export default function EroDashboard() {
     void refresh();
   }, []);
 
+  // Initialize wallet and check authorization
   useEffect(() => {
-    const loadWallet = async () => {
+    const init = async () => {
+      setIsLoading(true);
       try {
-        const addr = await getSignerAddress();
-        setWalletAddress(addr);
-      } catch {
-        setWalletAddress("Not Connected");
+        const provider = await getBrowserProvider();
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+
+        setWalletAddress(address);
+
+        // Check if user has ERO_ROLE on-chain
+        const contract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          UnifiedElectoralRollABI,
+          provider,
+        );
+        const hasERORole = await contract.hasRole(ROLE_IDS.ERO, address);
+
+        setIsAuthorized(hasERORole);
+      } catch (error) {
+        console.error("Initialization error:", error);
+        setIsAuthorized(false);
+      } finally {
+        setIsLoading(false);
       }
     };
-    void loadWallet();
+
+    init();
   }, []);
 
   const handleReview = (request: UiRequest) => {
@@ -212,6 +238,60 @@ export default function EroDashboard() {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Spinner color="primary" size="lg" />
+          <p className="text-default-500">Connecting to wallet...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthorized state
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardBody className="text-center space-y-4 p-8">
+            <div className="p-4 bg-danger/10 rounded-full w-fit mx-auto">
+              <svg
+                className="w-12 h-12 text-danger"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
+            <p className="text-default-500">
+              Your wallet (
+              {walletAddress
+                ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                : "Not connected"}
+              ) does not have ERO authority.
+            </p>
+            <p className="text-sm text-default-400">
+              Contact your State Election Commission to get authorized as an
+              ERO.
+            </p>
+            <Button color="primary" onPress={() => navigate("/")}>
+              Go Back Home
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 font-sans text-foreground">
       {/* 1. Top Header / Navigation */}
@@ -274,9 +354,9 @@ export default function EroDashboard() {
               ERO Level 1
             </Chip>
             <Chip className="font-mono" size="sm" variant="flat">
-              {walletAddress === "Connecting..." || walletAddress === "Not Connected"
-                ? walletAddress
-                : `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
+              {walletAddress
+                ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                : "Not Connected"}
             </Chip>
           </div>
         </div>
@@ -508,13 +588,15 @@ export default function EroDashboard() {
                                   selectedRequest.fromConstituencyNumber,
                                 );
 
-                                const mapForState =
-                                  (ASSEMBLY_CONSTITUENCY_MAP as Record<
+                                const mapForState = (
+                                  ASSEMBLY_CONSTITUENCY_MAP as Record<
                                     string,
                                     Record<string, number>
-                                  >)[state];
+                                  >
+                                )[state];
 
                                 let name: string | null = null;
+
                                 if (mapForState && Number.isFinite(number)) {
                                   for (const [candidate, num] of Object.entries(
                                     mapForState,
@@ -527,7 +609,9 @@ export default function EroDashboard() {
                                 }
 
                                 if (name) return `${name} (${number})`;
-                                if (Number.isFinite(number)) return `AC-${number}`;
+                                if (Number.isFinite(number))
+                                  return `AC-${number}`;
+
                                 return "-";
                               })()}
                             </p>

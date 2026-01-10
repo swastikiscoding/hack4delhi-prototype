@@ -7,6 +7,8 @@ import { blockchainRouter } from './routes/blockchain.route.js';
 import { transferRouter } from './routes/transfer.route.js';
 import { metaRouter } from './routes/meta.route.js';
 import { uploadRouter } from './routes/upload.route.js';
+import { stateECRouter } from './routes/stateec.route.js';
+import { eciRouter } from './routes/eci.route.js';
 
 const app = express();
 
@@ -25,6 +27,8 @@ app.use('/api/v1/blockchain', blockchainRouter);
 app.use('/api/v1/transfers', transferRouter);
 app.use('/api/v1/meta', metaRouter);
 app.use('/api/v1/uploads', uploadRouter);
+app.use('/api/v1/state-ec', stateECRouter);
+app.use('/api/v1/eci', eciRouter);
 
 app.get('/', (req, res) => {
   res.json(new ApiResponse(200, {}, 'API is running successfully'));

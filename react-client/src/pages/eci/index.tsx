@@ -1,10 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Input } from "@heroui/input";
+import { Spinner } from "@heroui/spinner";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import {
   DashboardSquare1,
   MapMarker1,
@@ -20,115 +28,256 @@ import {
   Stopwatch,
   Search1,
   CheckCircle1,
-  Ban2,
-  Link2AngularRight,
   Plus,
+  Link2AngularRight,
 } from "lineicons-react";
 
 import { ThemeSwitch } from "@/components/theme-switch";
+import { CONTRACT_ADDRESS, ROLE_IDS } from "@/config/blockchain";
+import { getBrowserProvider } from "@/lib/wallet";
+import { api } from "@/lib/api";
+import ABI from "@/abi/UnifiedElectoralRoll.json";
 
-// Mock Data
-const states = [
-  {
-    id: 1,
-    name: "Maharashtra",
-    code: "MH",
-    status: "AUTHORIZED",
-    wallet: "0x71C...9A2",
-    authorizedSince: "2023-01-15 10:30 AM",
-  },
-  {
-    id: 2,
-    name: "Delhi",
-    code: "DL",
-    status: "AUTHORIZED",
-    wallet: "0x82D...1B3",
-    authorizedSince: "2023-02-20 09:15 AM",
-  },
-  {
-    id: 3,
-    name: "Karnataka",
-    code: "KA",
-    status: "AUTHORIZED",
-    wallet: "0x93E...2C4",
-    authorizedSince: "2023-03-05 14:45 PM",
-  },
-  {
-    id: 4,
-    name: "Uttar Pradesh",
-    code: "UP",
-    status: "PENDING",
-    wallet: "0xA4F...3D5",
-    authorizedSince: "-",
-  },
-  {
-    id: 5,
-    name: "Tamil Nadu",
-    code: "TN",
-    status: "AUTHORIZED",
-    wallet: "0xB5G...4E6",
-    authorizedSince: "2023-04-10 11:20 AM",
-  },
-];
+// State name to code mapping
+const STATE_CODES: Record<string, string> = {
+  "Andaman and Nicobar Islands": "AN",
+  "Andhra Pradesh": "AP",
+  "Arunachal Pradesh": "AR",
+  Assam: "AS",
+  Bihar: "BR",
+  Chandigarh: "CH",
+  Chhattisgarh: "CG",
+  "Dadra and Nagar Haveli and Daman and Diu": "DD",
+  Delhi: "DL",
+  Goa: "GA",
+  Gujarat: "GJ",
+  Haryana: "HR",
+  "Himachal Pradesh": "HP",
+  "Jammu and Kashmir": "JK",
+  Jharkhand: "JH",
+  Karnataka: "KA",
+  Kerala: "KL",
+  Ladakh: "LA",
+  Lakshadweep: "LD",
+  "Madhya Pradesh": "MP",
+  Maharashtra: "MH",
+  Manipur: "MN",
+  Meghalaya: "ML",
+  Mizoram: "MZ",
+  Nagaland: "NL",
+  Odisha: "OD",
+  Puducherry: "PY",
+  Punjab: "PB",
+  Rajasthan: "RJ",
+  Sikkim: "SK",
+  "Tamil Nadu": "TN",
+  Telangana: "TS",
+  Tripura: "TR",
+  "Uttar Pradesh": "UP",
+  Uttarakhand: "UK",
+  "West Bengal": "WB",
+};
 
-const auditLogs = [
-  {
-    id: 1,
-    title: "Inter-State Sync Initiated",
-    desc: "Data synchronization between MH and DL nodes.",
-    time: "2 mins ago",
-    type: "sync",
-  },
-  {
-    id: 2,
-    title: "New State Authority Granted",
-    desc: "Karnataka (KA) State EC authorized.",
-    time: "1 hour ago",
-    type: "auth",
-  },
-  {
-    id: 3,
-    title: "Verification Anomaly Alert",
-    desc: "Multiple requests flagged in Constituency AC-40.",
-    time: "3 hours ago",
-    type: "alert",
-  },
-  {
-    id: 4,
-    title: "Protocol Update",
-    desc: "Smart contract v2.1 deployed successfully.",
-    time: "1 day ago",
-    type: "update",
-  },
-];
+interface StateEC {
+  walletAddress: string;
+  state: string;
+  name: string;
+  createdAt: string;
+  status: string;
+  txHash?: string;
+}
+
+interface Stats {
+  stateECCount: number;
+  eroCount: number;
+  bloCount: number;
+  activeStatesCount: number;
+  totalStates: number;
+}
+
+interface AuditEvent {
+  id: string;
+  type: string;
+  title: string;
+  desc: string;
+  time: string;
+  txHash?: string;
+}
 
 export default function EciDashboard() {
   const navigate = useNavigate();
-  const [walletAddress, setWalletAddress] = useState("Connecting...");
 
+  // Wallet & auth state
+  const [walletAddress, setWalletAddress] = useState<string>("");
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Data state
+  const [stateECs, setStateECs] = useState<StateEC[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    stateECCount: 0,
+    eroCount: 0,
+    bloCount: 0,
+    activeStatesCount: 0,
+    totalStates: 36,
+  });
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+
+  // UI state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  // Form state
+  const [newStateECAddress, setNewStateECAddress] = useState("");
+  const [newStateECState, setNewStateECState] = useState("");
+  const [newStateECName, setNewStateECName] = useState("");
+
+  // Initialize wallet and check authorization
   useEffect(() => {
-    const getAddress = async () => {
-      if (window.ethereum) {
-        try {
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await provider.getSigner();
-          const address = await signer.getAddress();
+    const init = async () => {
+      setIsLoading(true);
+      try {
+        const provider = await getBrowserProvider();
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
 
-          setWalletAddress(address);
-        } catch (error) {
-          console.error("Error fetching wallet address:", error);
-          setWalletAddress("Not Connected");
-        }
+        setWalletAddress(address);
+
+        // Check if user has ECI_ROLE on-chain
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+        const hasECIRole = await contract.hasRole(ROLE_IDS.ECI, address);
+
+        setIsAuthorized(hasECIRole);
+      } catch (error) {
+        console.error("Initialization error:", error);
+        setIsAuthorized(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    getAddress();
+    init();
   }, []);
+
+  // Fetch data when authorized
+  const fetchData = useCallback(async () => {
+    if (!isAuthorized) return;
+
+    try {
+      // Fetch State ECs from backend
+      const [stateECsResponse, statsResponse, eventsResponse] =
+        await Promise.all([
+          api
+            .get("/eci/state-authorities")
+            .catch(() => ({ data: { data: { stateECs: [] } } })),
+          api.get("/eci/stats").catch(() => ({ data: { data: null } })),
+          api
+            .get("/eci/events?limit=10")
+            .catch(() => ({ data: { data: { events: [] } } })),
+        ]);
+
+      if (stateECsResponse.data?.data?.stateECs) {
+        setStateECs(stateECsResponse.data.data.stateECs);
+      }
+
+      if (statsResponse.data?.data) {
+        setStats(statsResponse.data.data);
+      }
+
+      if (eventsResponse.data?.data?.events) {
+        setAuditEvents(eventsResponse.data.data.events);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  }, [isAuthorized]);
+
+  useEffect(() => {
+    if (isAuthorized) {
+      fetchData();
+    }
+  }, [isAuthorized, fetchData]);
+
+  // Add new State EC
+  const handleAddStateEC = async () => {
+    if (!newStateECAddress || !ethers.isAddress(newStateECAddress)) {
+      setFeedback({
+        type: "error",
+        message: "Please enter a valid wallet address",
+      });
+
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFeedback(null);
+
+    try {
+      const provider = await getBrowserProvider();
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+      // Call addStateAuthority on the contract
+      const tx = await contract.addStateAuthority(newStateECAddress);
+
+      setFeedback({
+        type: "success",
+        message: "Transaction submitted. Waiting for confirmation...",
+      });
+
+      await tx.wait();
+
+      // Save metadata to backend
+      try {
+        await api.post("/eci/state-authority", {
+          walletAddress: newStateECAddress,
+          state: newStateECState,
+          name: newStateECName,
+          txHash: tx.hash,
+          addedBy: walletAddress,
+        });
+      } catch (apiError) {
+        console.warn("Failed to save metadata to backend:", apiError);
+      }
+
+      setFeedback({
+        type: "success",
+        message: `State Authority granted successfully! Tx: ${tx.hash.slice(0, 10)}...`,
+      });
+
+      // Reset form and close modal
+      setNewStateECAddress("");
+      setNewStateECState("");
+      setNewStateECName("");
+      setIsAddModalOpen(false);
+
+      // Refresh data
+      await fetchData();
+    } catch (error: any) {
+      console.error("Error granting state authority:", error);
+      let errorMessage = "Failed to grant state authority";
+
+      if (error.reason) {
+        errorMessage = error.reason;
+      } else if (error.message?.includes("Already State EC")) {
+        errorMessage = "This address already has State EC authority";
+      } else if (error.message?.includes("user rejected")) {
+        errorMessage = "Transaction was rejected";
+      }
+
+      setFeedback({ type: "error", message: errorMessage });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleDisconnect = async () => {
     try {
-      // MetaMask does not provide a universal "disconnect" API, but it does
-      // support revoking permissions in many versions.
       if (window.ethereum?.request) {
         await window.ethereum.request({
           method: "wallet_revokePermissions",
@@ -136,20 +285,75 @@ export default function EciDashboard() {
         });
       }
     } catch (error) {
-      // If revoke isn't supported, we still treat this as an app-level logout.
       console.warn("wallet_revokePermissions failed/unsupported:", error);
     } finally {
       navigate("/");
     }
   };
 
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredStates = states.filter(
-    (state) =>
-      state.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      state.code.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredStates = stateECs.filter(
+    (stateEC) =>
+      stateEC.state.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      stateEC.walletAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      stateEC.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} mins ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+
+    return `${diffDays} days ago`;
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Spinner color="primary" size="lg" />
+          <p className="text-default-500">Connecting to wallet...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthorized state
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardBody className="text-center space-y-4 p-8">
+            <div className="p-4 bg-danger/10 rounded-full w-fit mx-auto">
+              <Shield2 className="w-12 h-12 text-danger" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
+            <p className="text-default-500">
+              Your wallet (
+              {walletAddress
+                ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                : "Not connected"}
+              ) does not have ECI authority.
+            </p>
+            <p className="text-sm text-default-400">
+              Only the Election Commission of India root authority can access
+              this dashboard.
+            </p>
+            <Button color="primary" onPress={() => navigate("/")}>
+              Go Back Home
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 font-sans text-foreground">
@@ -215,6 +419,51 @@ export default function EciDashboard() {
       </header>
 
       <main className="container mx-auto max-w-7xl px-6 py-8 space-y-8">
+        {/* Feedback Card */}
+        {feedback && (
+          <Card
+            className={`${
+              feedback.type === "success"
+                ? "bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800"
+                : "bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800"
+            } shadow-sm`}
+          >
+            <CardBody className="flex flex-row items-center gap-4 py-3 px-4">
+              <div
+                className={`p-1 ${
+                  feedback.type === "success"
+                    ? "bg-green-100 text-green-600"
+                    : "bg-red-100 text-red-600"
+                } rounded-full`}
+              >
+                {feedback.type === "success" ? (
+                  <CheckCircle1 height={16} width={16} />
+                ) : (
+                  <Alarm1 height={16} width={16} />
+                )}
+              </div>
+              <div className="flex-1">
+                <p
+                  className={`text-sm font-medium ${
+                    feedback.type === "success"
+                      ? "text-green-800 dark:text-green-200"
+                      : "text-red-800 dark:text-red-200"
+                  }`}
+                >
+                  {feedback.message}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="light"
+                onPress={() => setFeedback(null)}
+              >
+                Dismiss
+              </Button>
+            </CardBody>
+          </Card>
+        )}
+
         {/* 2. Root Authority Hero Section */}
         <Card className="w-full bg-gradient-to-r from-blue-900 to-slate-900 text-white border-none shadow-xl overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
@@ -256,15 +505,21 @@ export default function EciDashboard() {
                     className="font-mono text-sm truncate max-w-[200px]"
                     title={walletAddress}
                   >
-                    {walletAddress}
+                    {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                   </span>
                 </div>
                 <div className="flex gap-3">
                   <Button
                     className="flex-1 bg-white text-blue-900 font-semibold"
                     size="sm"
+                    onPress={() =>
+                      window.open(
+                        `https://sepolia.etherscan.io/address/${walletAddress}`,
+                        "_blank",
+                      )
+                    }
                   >
-                    <Key1 height={16} width={16} /> Manage Keys
+                    <Key1 height={16} width={16} /> View on Chain
                   </Button>
                   <Button
                     className="flex-1 text-white border-white/30 hover:bg-white/10"
@@ -293,13 +548,14 @@ export default function EciDashboard() {
                 </div>
               </div>
               <h3 className="text-3xl font-bold text-foreground">
-                36{" "}
+                {stats.stateECCount}{" "}
                 <span className="text-lg text-default-400 font-normal">
-                  / 36
+                  / {stats.totalStates}
                 </span>
               </h3>
               <p className="text-xs text-green-600 mt-2 font-medium">
-                100% Coverage
+                {Math.round((stats.stateECCount / stats.totalStates) * 100)}%
+                Coverage
               </p>
             </CardBody>
           </Card>
@@ -314,10 +570,10 @@ export default function EciDashboard() {
                   <UserMultiple4 height={18} width={18} />
                 </div>
               </div>
-              <h3 className="text-3xl font-bold text-foreground">4,820</h3>
-              <p className="text-xs text-green-600 mt-2 font-medium">
-                +12 this week
-              </p>
+              <h3 className="text-3xl font-bold text-foreground">
+                {stats.eroCount}
+              </h3>
+              <p className="text-xs text-default-500 mt-2">Across all states</p>
             </CardBody>
           </Card>
 
@@ -331,7 +587,9 @@ export default function EciDashboard() {
                   <TrendUp1 height={18} width={18} />
                 </div>
               </div>
-              <h3 className="text-3xl font-bold text-foreground">124k</h3>
+              <h3 className="text-3xl font-bold text-foreground">
+                {stats.bloCount}
+              </h3>
               <p className="text-xs text-default-500 mt-2">Active Workforce</p>
             </CardBody>
           </Card>
@@ -340,16 +598,29 @@ export default function EciDashboard() {
             <CardBody className="p-6">
               <div className="flex justify-between items-start mb-2">
                 <p className="text-sm font-medium text-default-500">
-                  Active Migrations
+                  Contract Address
                 </p>
                 <div className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
                   <Stopwatch height={18} width={18} />
                 </div>
               </div>
-              <h3 className="text-3xl font-bold text-foreground">892</h3>
-              <p className="text-xs text-warning-600 mt-2 font-medium">
-                Pending Approval
-              </p>
+              <h3
+                className="text-sm font-mono font-bold text-foreground truncate"
+                title={CONTRACT_ADDRESS}
+              >
+                {CONTRACT_ADDRESS.slice(0, 10)}...{CONTRACT_ADDRESS.slice(-8)}
+              </h3>
+              <button
+                className="text-xs text-primary mt-2 font-medium hover:underline"
+                onClick={() =>
+                  window.open(
+                    `https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`,
+                    "_blank",
+                  )
+                }
+              >
+                View Contract →
+              </button>
             </CardBody>
           </Card>
         </div>
@@ -370,6 +641,7 @@ export default function EciDashboard() {
                 className="font-semibold"
                 color="primary"
                 startContent={<Plus height={18} width={18} />}
+                onPress={() => setIsAddModalOpen(true)}
               >
                 Grant New Authority
               </Button>
@@ -378,7 +650,7 @@ export default function EciDashboard() {
             <div className="w-full">
               <Input
                 className="max-w-md"
-                placeholder="Search State or Code..."
+                placeholder="Search State, Name or Wallet..."
                 startContent={
                   <Search1
                     className="text-default-400"
@@ -410,88 +682,115 @@ export default function EciDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-default-200">
-                    {filteredStates.map((state) => (
-                      <tr
-                        key={state.id}
-                        className="hover:bg-default-50 transition-colors group"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold text-default-600">
-                              {state.code}
-                            </div>
-                            <span className="font-medium text-default-900">
-                              {state.name}
-                            </span>
-                          </div>
+                    {filteredStates.length === 0 ? (
+                      <tr>
+                        <td
+                          className="px-6 py-8 text-center text-default-500"
+                          colSpan={5}
+                        >
+                          {stateECs.length === 0
+                            ? "No State ECs authorized yet. Click 'Grant New Authority' to add one."
+                            : "No states match your search."}
                         </td>
-                        <td className="px-6 py-4">
-                          <Chip
-                            className="capitalize font-medium"
-                            color={
-                              state.status === "AUTHORIZED"
-                                ? "success"
-                                : "warning"
-                            }
-                            size="sm"
-                            startContent={
-                              state.status === "AUTHORIZED" ? (
+                      </tr>
+                    ) : (
+                      filteredStates.map((stateEC) => (
+                        <tr
+                          key={stateEC.walletAddress}
+                          className="hover:bg-default-50 transition-colors group"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-default-100 flex items-center justify-center text-xs font-bold text-default-600">
+                                {STATE_CODES[stateEC.state] ||
+                                  stateEC.state.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <span className="font-medium text-default-900 block">
+                                  {stateEC.state || "Unknown State"}
+                                </span>
+                                {stateEC.name && (
+                                  <span className="text-xs text-default-500">
+                                    {stateEC.name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <Chip
+                              className="capitalize font-medium"
+                              color={
+                                stateEC.status === "ACTIVE"
+                                  ? "success"
+                                  : "warning"
+                              }
+                              size="sm"
+                              startContent={
                                 <CheckCircle1
                                   className="ml-1"
                                   height={14}
                                   width={14}
                                 />
-                              ) : (
-                                <Stopwatch
-                                  className="ml-1"
-                                  height={14}
-                                  width={14}
-                                />
-                              )
-                            }
-                            variant="flat"
-                          >
-                            {state.status.toLowerCase()}
-                          </Chip>
-                        </td>
-                        <td className="px-6 py-4 font-mono text-default-600 text-xs">
-                          {state.wallet}
-                        </td>
-                        <td className="px-6 py-4 text-default-500">
-                          {state.authorizedSince}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {state.status === "PENDING" ? (
-                            <Button color="primary" size="sm" variant="flat">
-                              Grant Authority
-                            </Button>
-                          ) : (
+                              }
+                              variant="flat"
+                            >
+                              {stateEC.status.toLowerCase()}
+                            </Chip>
+                          </td>
+                          <td className="px-6 py-4 font-mono text-default-600 text-xs">
+                            {stateEC.walletAddress.slice(0, 6)}...
+                            {stateEC.walletAddress.slice(-4)}
+                            <button
+                              className="ml-2 text-default-400 hover:text-default-600"
+                              title="Copy address"
+                              onClick={() =>
+                                navigator.clipboard.writeText(
+                                  stateEC.walletAddress,
+                                )
+                              }
+                            >
+                              📋
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-default-500">
+                            {new Date(stateEC.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 text-right">
                             <Button
-                              className="text-default-500 group-hover:text-default-900"
                               size="sm"
                               variant="light"
+                              onPress={() => {
+                                if (stateEC.txHash) {
+                                  window.open(
+                                    `https://sepolia.etherscan.io/tx/${stateEC.txHash}`,
+                                    "_blank",
+                                  );
+                                } else {
+                                  window.open(
+                                    `https://sepolia.etherscan.io/address/${stateEC.walletAddress}`,
+                                    "_blank",
+                                  );
+                                }
+                              }}
                             >
-                              Manage
+                              View on Chain
                             </Button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
               <div className="p-4 border-t border-default-200 flex justify-between items-center bg-default-50">
                 <span className="text-xs text-default-500">
-                  Showing {filteredStates.length} states
+                  Showing {filteredStates.length} of {stateECs.length} state
+                  authorities
                 </span>
-                <div className="flex gap-2">
-                  <Button isDisabled size="sm" variant="flat">
-                    Previous
-                  </Button>
-                  <Button size="sm" variant="flat">
-                    Next
-                  </Button>
-                </div>
+                <Button size="sm" variant="flat" onPress={fetchData}>
+                  Refresh
+                </Button>
               </div>
             </Card>
           </div>
@@ -510,62 +809,149 @@ export default function EciDashboard() {
             <Card className="border border-default-200 shadow-sm h-full max-h-[600px] overflow-y-auto">
               <CardBody className="p-0">
                 <div className="divide-y divide-default-200">
-                  {auditLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="p-4 hover:bg-default-50 transition-colors"
-                    >
-                      <div className="flex gap-4">
-                        <div
-                          className={`mt-1 p-2 rounded-lg h-fit ${
-                            log.type === "sync"
-                              ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                              : log.type === "auth"
+                  {auditEvents.length === 0 ? (
+                    <div className="p-8 text-center text-default-500">
+                      No recent events
+                    </div>
+                  ) : (
+                    auditEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="p-4 hover:bg-default-50 transition-colors"
+                      >
+                        <div className="flex gap-4">
+                          <div
+                            className={`mt-1 p-2 rounded-lg h-fit ${
+                              event.type === "auth"
                                 ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                                : log.type === "alert"
-                                  ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                                  : "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
-                          }`}
-                        >
-                          {log.type === "sync" && (
-                            <TrendUp1 height={18} width={18} />
-                          )}
-                          {log.type === "auth" && (
-                            <Shield2 height={18} width={18} />
-                          )}
-                          {log.type === "alert" && (
-                            <Ban2 height={18} width={18} />
-                          )}
-                          {log.type === "update" && (
-                            <FileMultiple height={18} width={18} />
-                          )}
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex justify-between items-start">
-                            <h4 className="text-sm font-semibold text-foreground">
-                              {log.title}
-                            </h4>
-                            <span className="text-xs text-default-400 whitespace-nowrap">
-                              {log.time}
-                            </span>
+                                : event.type === "ero"
+                                  ? "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
+                                  : "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
+                            }`}
+                          >
+                            {event.type === "auth" && (
+                              <Shield2 height={18} width={18} />
+                            )}
+                            {event.type === "ero" && (
+                              <UserMultiple4 height={18} width={18} />
+                            )}
+                            {event.type === "blo" && (
+                              <TrendUp1 height={18} width={18} />
+                            )}
                           </div>
-                          <p className="text-xs text-default-500 leading-relaxed">
-                            {log.desc}
-                          </p>
-                          <button className="flex items-center gap-1 text-xs text-primary hover:underline mt-2">
-                            <Link2AngularRight height={12} width={12} /> View on
-                            Explorer
-                          </button>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex justify-between items-start">
+                              <h4 className="text-sm font-semibold text-foreground">
+                                {event.title}
+                              </h4>
+                              <span className="text-xs text-default-400 whitespace-nowrap">
+                                {formatTimeAgo(event.time)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-default-500 leading-relaxed">
+                              {event.desc}
+                            </p>
+                            {event.txHash && (
+                              <button
+                                className="flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+                                onClick={() =>
+                                  window.open(
+                                    `https://sepolia.etherscan.io/tx/${event.txHash}`,
+                                    "_blank",
+                                  )
+                                }
+                              >
+                                <Link2AngularRight height={12} width={12} />{" "}
+                                View on Explorer
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardBody>
             </Card>
           </div>
         </div>
       </main>
+
+      {/* Add State EC Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        size="lg"
+        onClose={() => {
+          if (!isSubmitting) {
+            setIsAddModalOpen(false);
+            setNewStateECAddress("");
+            setNewStateECState("");
+            setNewStateECName("");
+          }
+        }}
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            Grant State Authority
+            <p className="text-sm font-normal text-default-500">
+              This will grant STATE_ROLE to the specified wallet address on the
+              blockchain.
+            </p>
+          </ModalHeader>
+          <ModalBody className="gap-4">
+            <Input
+              isRequired
+              description="The Ethereum wallet address of the State EC"
+              isDisabled={isSubmitting}
+              label="Wallet Address"
+              placeholder="0x..."
+              value={newStateECAddress}
+              onValueChange={setNewStateECAddress}
+            />
+            <Input
+              description="The state or union territory this authority represents"
+              isDisabled={isSubmitting}
+              label="State/UT Name"
+              placeholder="e.g., Maharashtra, Delhi, Karnataka"
+              value={newStateECState}
+              onValueChange={setNewStateECState}
+            />
+            <Input
+              description="Optional: Name or designation"
+              isDisabled={isSubmitting}
+              label="Authority Name"
+              placeholder="e.g., State Election Commissioner"
+              value={newStateECName}
+              onValueChange={setNewStateECName}
+            />
+
+            <div className="p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+              <p className="text-xs text-warning-700 dark:text-warning-300">
+                <strong>Note:</strong> This action will send a transaction to
+                the blockchain. You will need to confirm it in MetaMask and pay
+                gas fees. Only the ECI root authority can grant State EC
+                permissions.
+              </p>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              isDisabled={isSubmitting}
+              variant="light"
+              onPress={() => setIsAddModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              isLoading={isSubmitting}
+              onPress={handleAddStateEC}
+            >
+              {isSubmitting ? "Processing..." : "Grant Authority"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

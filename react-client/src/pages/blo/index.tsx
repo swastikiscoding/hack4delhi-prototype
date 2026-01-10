@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
+import { Spinner } from "@heroui/spinner";
 import { ethers } from "ethers";
 import { toast } from "sonner";
 
 import { ThemeSwitch } from "@/components/theme-switch";
 import UnifiedElectoralRollABI from "@/abi/UnifiedElectoralRoll.json";
-import { CONTRACT_ADDRESS } from "@/config/blockchain";
+import { CONTRACT_ADDRESS, ROLE_IDS } from "@/config/blockchain";
 import { api } from "@/lib/api";
 import { getBrowserProvider, getSignerAddress } from "@/lib/wallet";
 import { ASSEMBLY_CONSTITUENCY_MAP } from "@/utils/constituencymap";
@@ -28,7 +30,8 @@ type UiRequest = {
 };
 
 export default function BloDashboard() {
-  const [walletAddress, setWalletAddress] = useState<string>("Connecting...");
+  const navigate = useNavigate();
+  const [walletAddress, setWalletAddress] = useState<string>("");
   const [requests, setRequests] = useState<UiRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<UiRequest | null>(
     null,
@@ -36,6 +39,7 @@ export default function BloDashboard() {
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isActing, setIsActing] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   const pendingCount = useMemo(() => requests.length, [requests]);
 
@@ -114,18 +118,35 @@ export default function BloDashboard() {
     void refresh();
   }, []);
 
+  // Initialize wallet and check authorization
   useEffect(() => {
-    const loadWallet = async () => {
+    const init = async () => {
+      setIsLoading(true);
       try {
-        const addr = await getSignerAddress();
+        const provider = await getBrowserProvider();
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
 
-        setWalletAddress(addr);
-      } catch {
-        setWalletAddress("Not Connected");
+        setWalletAddress(address);
+
+        // Check if user has BLO_ROLE on-chain
+        const contract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          UnifiedElectoralRollABI,
+          provider,
+        );
+        const hasBLORole = await contract.hasRole(ROLE_IDS.BLO, address);
+
+        setIsAuthorized(hasBLORole);
+      } catch (error) {
+        console.error("Initialization error:", error);
+        setIsAuthorized(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    void loadWallet();
+    init();
   }, []);
 
   const verifyOnChainAndPersist = async () => {
@@ -274,6 +295,59 @@ export default function BloDashboard() {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Spinner color="warning" size="lg" />
+          <p className="text-default-500">Connecting to wallet...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthorized state
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardBody className="text-center space-y-4 p-8">
+            <div className="p-4 bg-danger/10 rounded-full w-fit mx-auto">
+              <svg
+                className="w-12 h-12 text-danger"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
+            <p className="text-default-500">
+              Your wallet (
+              {walletAddress
+                ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                : "Not connected"}
+              ) does not have BLO authority.
+            </p>
+            <p className="text-sm text-default-400">
+              Contact your State Election Commission to get authorized as a BLO.
+            </p>
+            <Button color="primary" onPress={() => navigate("/")}>
+              Go Back Home
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 font-sans text-foreground">
       {/* 1. Top Header */}
@@ -283,9 +357,7 @@ export default function BloDashboard() {
             <h1 className="text-lg font-bold leading-tight">
               BLO Verification Dashboard
             </h1>
-            <p className="text-xs text-default-500">
-              ECTA – Official Portal
-            </p>
+            <p className="text-xs text-default-500">ECTA – Official Portal</p>
           </div>
           <div className="flex items-center gap-4">
             <ThemeSwitch />
@@ -300,10 +372,9 @@ export default function BloDashboard() {
             <div className="flex items-center gap-2 px-3 py-1.5 bg-default-100 rounded-full border border-default-200">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs font-mono text-default-600">
-                {walletAddress === "Connecting..." ||
-                walletAddress === "Not Connected"
-                  ? walletAddress
-                  : `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
+                {walletAddress
+                  ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                  : "Not Connected"}
               </span>
             </div>
           </div>

@@ -33,8 +33,8 @@ export default function CitizenDashboard() {
             <div className="flex items-center gap-6 w-full md:w-auto">
               <div className="relative">
                 <Avatar
-                  className="w-24 h-24 text-large border-4 border-white/20"
                   isBordered
+                  className="w-24 h-24 text-large border-4 border-white/20"
                   src={
                     voter.photo ||
                     "https://i.pravatar.cc/150?u=a04258114e29026708c"

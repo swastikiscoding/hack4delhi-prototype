@@ -9,6 +9,7 @@ export const api = axios.create({
 
 export const authHeaders = (accessToken: string | null) => {
   if (!accessToken) return {};
+
   return {
     Authorization: `Bearer ${accessToken}`,
   };

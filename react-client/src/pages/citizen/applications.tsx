@@ -10,7 +10,7 @@ import {
   ModalFooter,
   useDisclosure,
 } from "@heroui/modal";
-import { Input, Textarea } from "@heroui/input";
+import { Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Select, SelectItem } from "@heroui/select";
 import { toast } from "sonner";
@@ -55,6 +55,7 @@ export default function CitizenApplications() {
 
   const hasActiveAddressChange = useMemo(() => {
     const status = currentRequest?.status;
+
     return status === "PENDING_BLO" || status === "BLO_VERIFIED";
   }, [currentRequest]);
 
@@ -63,12 +64,12 @@ export default function CitizenApplications() {
 
     const toStateName = String(currentRequest.toState || "");
     const toConstituencyNumber = Number(currentRequest.toConstituency);
-    const mapForState =
-      (ASSEMBLY_CONSTITUENCY_MAP as Record<string, Record<string, number>>)[
-        toStateName
-      ];
+    const mapForState = (
+      ASSEMBLY_CONSTITUENCY_MAP as Record<string, Record<string, number>>
+    )[toStateName];
 
     let toConstituencyName: string | null = null;
+
     if (mapForState && Number.isFinite(toConstituencyNumber)) {
       for (const [name, num] of Object.entries(mapForState)) {
         if (Number(num) === toConstituencyNumber) {
@@ -94,11 +95,12 @@ export default function CitizenApplications() {
 
   const constituencyOptions = useMemo(() => {
     if (!toState) return [] as Array<{ name: string; number: number }>;
-    const mapForState =
-      (ASSEMBLY_CONSTITUENCY_MAP as Record<string, Record<string, number>>)[
-        toState
-      ];
+    const mapForState = (
+      ASSEMBLY_CONSTITUENCY_MAP as Record<string, Record<string, number>>
+    )[toState];
+
     if (!mapForState) return [] as Array<{ name: string; number: number }>;
+
     return Object.entries(mapForState)
       .map(([name, number]) => ({ name, number: Number(number) }))
       .sort((a, b) => a.number - b.number);
@@ -114,6 +116,7 @@ export default function CitizenApplications() {
     const load = async () => {
       try {
         const s = await api.get("/meta/states");
+
         setStates(s.data?.data || []);
       } catch (e) {
         void e;
@@ -125,6 +128,7 @@ export default function CitizenApplications() {
         const r = await api.get("/transfers/me", {
           headers: authHeaders(accessToken),
         });
+
         setCurrentRequest(r.data?.data || null);
       } catch (e) {
         void e;
@@ -137,11 +141,13 @@ export default function CitizenApplications() {
   const submitApplication = async (onClose: () => void) => {
     if (!accessToken) {
       navigate("/login");
+
       return;
     }
 
     if (!toAddress || !toState || !toConstituency || !proofFile) {
       toast.error("Please fill all fields and upload a PDF proof");
+
       return;
     }
 
@@ -149,6 +155,7 @@ export default function CitizenApplications() {
     try {
       // 1) Upload proof PDF to Cloudinary via server
       const formData = new FormData();
+
       formData.append("file", proofFile);
 
       const uploaded = await api.post("/uploads/proof", formData, {
@@ -158,6 +165,7 @@ export default function CitizenApplications() {
       });
 
       const uploadedUrl = String(uploaded.data?.data?.url || "");
+
       if (!uploadedUrl) {
         throw new Error("Upload failed: missing URL");
       }
@@ -267,14 +275,19 @@ export default function CitizenApplications() {
                     <div className="mt-3 text-xs text-default-700">
                       <div className="flex flex-wrap gap-x-6 gap-y-2">
                         <span>
-                          <span className="text-default-500">New State/UT:</span>{" "}
+                          <span className="text-default-500">
+                            New State/UT:
+                          </span>{" "}
                           {activeRequestDetails.toStateName || "-"}
                         </span>
                         <span>
-                          <span className="text-default-500">New Constituency:</span>{" "}
+                          <span className="text-default-500">
+                            New Constituency:
+                          </span>{" "}
                           {activeRequestDetails.toConstituencyName
                             ? `${activeRequestDetails.toConstituencyName} (${activeRequestDetails.toConstituencyNumber ?? "-"})`
-                            : activeRequestDetails.toConstituencyNumber ?? "-"}
+                            : (activeRequestDetails.toConstituencyNumber ??
+                              "-")}
                         </span>
                         {activeRequestDetails.submittedAt && (
                           <span>
@@ -371,8 +384,8 @@ export default function CitizenApplications() {
                       label="New Address"
                       minRows={3}
                       placeholder="Enter your full new address including pincode"
-                      variant="bordered"
                       value={toAddress}
+                      variant="bordered"
                       onValueChange={setToAddress}
                     />
 
@@ -383,6 +396,7 @@ export default function CitizenApplications() {
                       variant="bordered"
                       onSelectionChange={(keys) => {
                         const arr = Array.from(keys);
+
                         setToState((arr[0] as string) || "");
                         setToConstituency("");
                       }}
@@ -406,13 +420,12 @@ export default function CitizenApplications() {
                       variant="bordered"
                       onSelectionChange={(keys) => {
                         const arr = Array.from(keys);
+
                         setToConstituency((arr[0] as string) || "");
                       }}
                     >
                       {constituencyOptions.map((c) => (
-                        <SelectItem key={String(c.number)}>
-                          {c.name}
-                        </SelectItem>
+                        <SelectItem key={String(c.number)}>{c.name}</SelectItem>
                       ))}
                     </Select>
 
@@ -428,40 +441,41 @@ export default function CitizenApplications() {
                           type="file"
                           onChange={(e) => {
                             const file = e.target.files?.[0] || null;
+
                             setProofFile(file);
                             setProofUrl("");
                           }}
                         />
                         <label className="cursor-pointer" htmlFor="proof-pdf">
-                        <svg
-                          className="w-10 h-10 text-default-400 mb-3"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                        <p className="text-sm font-medium text-default-600">
-                          Click to upload PDF
-                        </p>
-                        <p className="text-xs text-default-400 mt-1">
-                          PDF only (Max 10MB)
-                        </p>
-                        {proofFile && (
-                          <p className="text-xs text-default-500 mt-2">
-                            Selected: {proofFile.name}
+                          <svg
+                            className="w-10 h-10 text-default-400 mb-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                          </svg>
+                          <p className="text-sm font-medium text-default-600">
+                            Click to upload PDF
                           </p>
-                        )}
-                        {proofUrl && (
-                          <p className="text-xs text-default-500 mt-1">
-                            Uploaded
+                          <p className="text-xs text-default-400 mt-1">
+                            PDF only (Max 10MB)
                           </p>
-                        )}
+                          {proofFile && (
+                            <p className="text-xs text-default-500 mt-2">
+                              Selected: {proofFile.name}
+                            </p>
+                          )}
+                          {proofUrl && (
+                            <p className="text-xs text-default-500 mt-1">
+                              Uploaded
+                            </p>
+                          )}
                         </label>
                       </div>
                     </div>

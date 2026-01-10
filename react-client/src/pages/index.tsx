@@ -1,7 +1,14 @@
 import { Button } from "@heroui/button";
 import { Card, CardHeader } from "@heroui/card";
 import { Image } from "@heroui/image";
+import { Chip } from "@heroui/chip";
 import { Link } from "react-router-dom";
+import {
+  UserMultiple4,
+  MapMarker1,
+  DashboardSquare1,
+  FileMultiple,
+} from "lineicons-react";
 
 import DefaultLayout from "@/layouts/default";
 
@@ -9,81 +16,306 @@ export default function IndexPage() {
   return (
     <DefaultLayout>
       {/* Hero Section */}
-      <section className="relative flex flex-col md:flex-row items-center justify-between gap-12 min-h-[calc(100vh-5rem)] py-0 overflow-hidden">
-        {/* Background decorative elements */}
-        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[120px] -z-10" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-green-500/10 rounded-full blur-[120px] -z-10" />
+      <section className="relative flex flex-col items-center justify-center min-h-[calc(100vh-5rem)] py-16 overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 -z-10">
+          {/* Gradient orbs */}
+          <div className="absolute top-[10%] left-[5%] w-[600px] h-[600px] bg-gradient-to-br from-orange-500/20 via-orange-400/10 to-transparent rounded-full blur-[100px] animate-pulse" />
+          <div
+            className="absolute bottom-[10%] right-[5%] w-[500px] h-[500px] bg-gradient-to-tl from-green-500/20 via-green-400/10 to-transparent rounded-full blur-[100px] animate-pulse"
+            style={{ animationDelay: "1s" }}
+          />
+          <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-r from-orange-500/5 via-primary/10 to-green-500/5 rounded-full blur-[120px]" />
 
-        <div className="flex flex-col gap-8 max-w-2xl z-10">
-          <div className="inline-flex items-center px-3 py-1 rounded-full border border-default-200 bg-default-50 w-fit">
-            <span className="w-2 h-2 rounded-full bg-success mr-2 animate-pulse" />
-            <span className="text-xs font-medium text-default-500">
+          {/* Grid pattern overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        </div>
+
+        {/* Main content - centered */}
+        <div className="flex flex-col items-center text-center gap-8 max-w-4xl z-10 px-4">
+          {/* Top badges */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Chip
+              classNames={{
+                base: "bg-gradient-to-r from-orange-500/10 to-orange-500/5 border border-orange-500/20 backdrop-blur-sm",
+                content:
+                  "text-orange-600 dark:text-orange-400 font-semibold text-xs",
+              }}
+              startContent={
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    clipRule="evenodd"
+                    d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    fillRule="evenodd"
+                  />
+                </svg>
+              }
+              variant="flat"
+            >
               Blockchain Secured
-            </span>
+            </Chip>
+            <Chip
+              classNames={{
+                base: "bg-gradient-to-r from-green-500/10 to-green-500/5 border border-green-500/20 backdrop-blur-sm",
+                content:
+                  "text-green-600 dark:text-green-400 font-semibold text-xs",
+              }}
+              startContent={
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              }
+              variant="flat"
+            >
+              Live on Sepolia
+            </Chip>
+            <Chip
+              classNames={{
+                base: "bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-blue-500/20 backdrop-blur-sm",
+                content:
+                  "text-blue-600 dark:text-blue-400 font-semibold text-xs",
+              }}
+              startContent={
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                  <path
+                    clipRule="evenodd"
+                    d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                    fillRule="evenodd"
+                  />
+                </svg>
+              }
+              variant="flat"
+            >
+              Hack4Delhi Prototype
+            </Chip>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1]">
-            Democracy, <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-green-600">
-              Decentralized.
-            </span>
-          </h1>
+          {/* Main heading */}
+          <div className="space-y-4">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.05]">
+              <span className="block">Democracy,</span>
+              <span className="relative">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-orange-400 to-green-500 animate-gradient bg-[length:200%_auto]">
+                  Decentralized.
+                </span>
+                {/* Underline decoration */}
+                <svg
+                  className="absolute -bottom-2 left-0 w-full h-3 text-orange-500/30"
+                  preserveAspectRatio="none"
+                  viewBox="0 0 200 12"
+                >
+                  <path
+                    d="M0,8 Q50,0 100,8 T200,8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeWidth="4"
+                  />
+                </svg>
+              </span>
+            </h1>
+          </div>
 
-          <p className="text-xl text-default-600 leading-relaxed max-w-lg">
-            ECTA (Electoral Coordination and Transfer Automation) leverages Ethereum blockchain to ensure every vote is immutable, transparent, and accessible anywhere in India.
+          {/* Subheading */}
+          <p className="text-lg sm:text-xl md:text-2xl text-default-500 leading-relaxed max-w-2xl font-light">
+            ECTA leverages{" "}
+            <span className="text-foreground font-medium">
+              Ethereum blockchain
+            </span>{" "}
+            to ensure every electoral record is
+            <span className="text-orange-500 font-medium"> immutable</span>,
+            <span className="text-green-500 font-medium"> transparent</span>,
+            and
+            <span className="text-blue-500 font-medium"> accessible</span>{" "}
+            anywhere in India.
           </p>
 
-          <div className="flex flex-wrap gap-4">
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
             <Button
               as={Link}
-              className="font-semibold px-8 shadow-xl shadow-orange-500/20"
-              color="primary"
+              className="font-bold px-8 py-6 text-base bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-105 transition-all duration-300"
               radius="full"
               size="lg"
               to="/login"
             >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
               Access Voter Portal
             </Button>
             <Button
-              className="font-medium border-default-200"
+              className="font-semibold px-8 py-6 text-base border-2 border-default-200 hover:border-default-400 hover:bg-default-100 transition-all duration-300"
               radius="full"
               size="lg"
               variant="bordered"
             >
-              Learn How It Works
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
+              Watch Demo
             </Button>
           </div>
         </div>
 
-        <div className="w-full md:w-1/2 flex justify-center relative z-10">
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-default-100 bg-default-50">
-            <Image
-              alt="Indian Parliament House"
-              className="w-full h-auto object-cover scale-105 hover:scale-110 transition-transform duration-700"
-              height={400}
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Glimpse_of_the_new_Parliament_Building%2C_in_New_Delhi.jpg/500px-Glimpse_of_the_new_Parliament_Building%2C_in_New_Delhi.jpg"
-              width={600}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-            <div className="absolute bottom-6 left-6 text-white pointer-events-none">
-              <p className="font-bold text-lg">Sansad Bhavan</p>
-              <p className="text-sm opacity-80">The Heart of Indian Democracy</p>
+        {/* Floating cards decoration */}
+        <div className="absolute bottom-8 left-8 hidden lg:block">
+          <div className="relative p-4 bg-background/80 backdrop-blur-xl border border-default-200 rounded-2xl shadow-xl animate-float">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-500/10 rounded-xl">
+                <svg
+                  className="w-6 h-6 text-orange-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs text-default-400">Smart Contract</p>
+                <p className="text-sm font-bold text-foreground">
+                  Deployed & Verified
+                </p>
+              </div>
             </div>
           </div>
+        </div>
+
+        <div className="absolute top-32 right-8 hidden lg:block">
+          <div
+            className="relative p-4 bg-background/80 backdrop-blur-xl border border-default-200 rounded-2xl shadow-xl animate-float"
+            style={{ animationDelay: "0.5s" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500/10 rounded-xl">
+                <svg
+                  className="w-6 h-6 text-green-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs text-default-400">Network</p>
+                <p className="text-sm font-bold text-foreground">
+                  Sepolia Testnet
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
+          <span className="text-xs text-default-400 font-medium">
+            Scroll to explore
+          </span>
+          <svg
+            className="w-5 h-5 text-default-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+            />
+          </svg>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 border-y border-default-200/50 bg-default-50/50">
+      <section className="py-16 border-y border-default-200/50 bg-default-50/50">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { label: "Registered Voters", value: "950M+" },
-            { label: "Polling Stations", value: "1M+" },
-            { label: "States & UTs", value: "36" },
-            { label: "Electoral Roll", value: "Unified" },
+            {
+              label: "Registered Voters",
+              value: "950M+",
+              icon: (
+                <UserMultiple4 className="w-8 h-8 text-orange-600 [&_path]:fill-current" />
+              ),
+              bg: "bg-orange-100 dark:bg-orange-500/20",
+            },
+            {
+              label: "Polling Stations",
+              value: "1M+",
+              icon: (
+                <MapMarker1 className="w-8 h-8 text-green-600 [&_path]:fill-current" />
+              ),
+              bg: "bg-green-100 dark:bg-green-500/20",
+            },
+            {
+              label: "States & UTs",
+              value: "36",
+              icon: (
+                <DashboardSquare1 className="w-8 h-8 text-blue-600 [&_path]:fill-current" />
+              ),
+              bg: "bg-blue-100 dark:bg-blue-500/20",
+            },
+            {
+              label: "Electoral Roll",
+              value: "Unified",
+              icon: (
+                <FileMultiple className="w-8 h-8 text-purple-600 [&_path]:fill-current" />
+              ),
+              bg: "bg-purple-100 dark:bg-purple-500/20",
+            },
           ].map((stat, idx) => (
-            <div key={idx} className="flex flex-col gap-1">
-              <h3 className="text-3xl md:text-4xl font-bold text-foreground">
+            <div key={idx} className="flex flex-col items-center gap-2 group">
+              <div
+                className={`p-3 ${stat.bg} rounded-2xl group-hover:scale-110 transition-transform duration-300`}
+              >
+                {stat.icon}
+              </div>
+              <h3 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground/70">
                 {stat.value}
               </h3>
               <p className="text-sm font-medium text-default-500 uppercase tracking-wider">
@@ -196,8 +428,8 @@ export default function IndexPage() {
                 <div>
                   <h3 className="text-2xl font-bold mb-2">Smart Migration</h3>
                   <p className="text-default-500">
-                    Relocating? Your vote moves with you instantly via smart contracts. No
-                    paperwork, no delays.
+                    Relocating? Your vote moves with you instantly via smart
+                    contracts. No paperwork, no delays.
                   </p>
                 </div>
               </CardHeader>
@@ -485,10 +717,9 @@ export default function IndexPage() {
             Commitment to Integrity
           </h3>
           <p className="text-lg md:text-xl text-default-800 leading-relaxed mb-10 max-w-2xl mx-auto">
-            ECTA is built on the principles of
-            transparency, privacy, and constitutional alignment. We ensure that
-            no personal data is exposed while maintaining a verifiable audit
-            trail.
+            ECTA is built on the principles of transparency, privacy, and
+            constitutional alignment. We ensure that no personal data is exposed
+            while maintaining a verifiable audit trail.
           </p>
           <div className="flex flex-wrap justify-center gap-8 md:gap-16">
             <div className="flex flex-col items-center gap-3 group">

@@ -50,6 +50,7 @@ export const RoleProtectedRoute = ({
       if (!window.ethereum) {
         setStage("error");
         setErrorMessage("MetaMask is not installed.");
+
         return;
       }
 
@@ -77,7 +78,9 @@ export const RoleProtectedRoute = ({
     } catch (e: any) {
       console.error("Authorization check failed", e);
       setStage("error");
-      setErrorMessage(e?.reason || e?.message || "Failed to verify wallet role");
+      setErrorMessage(
+        e?.reason || e?.message || "Failed to verify wallet role",
+      );
     } finally {
       isCheckingRef.current = false;
     }
@@ -89,6 +92,7 @@ export const RoleProtectedRoute = ({
       if (!window.ethereum?.request) {
         setStage("error");
         setErrorMessage("MetaMask is not installed.");
+
         return;
       }
 
@@ -119,6 +123,7 @@ export const RoleProtectedRoute = ({
           setErrorMessage(
             "MetaMask allowed multiple accounts to connect. Please select exactly ONE account in the MetaMask popup, then click again.",
           );
+
           return;
         }
       } catch (e: any) {
@@ -127,11 +132,13 @@ export const RoleProtectedRoute = ({
           setErrorMessage(
             "A MetaMask request is already pending. Open MetaMask and complete it, then click Connect again.",
           );
+
           return;
         }
         if (e?.code === 4001) {
           setStage(forceReconnect ? "needsReconnect" : "needsConnection");
           setErrorMessage("Connection request was rejected.");
+
           return;
         }
         throw e;
@@ -152,6 +159,7 @@ export const RoleProtectedRoute = ({
         if (!window.ethereum?.request) {
           setStage("error");
           setErrorMessage("MetaMask is not installed.");
+
           return;
         }
 
@@ -161,6 +169,7 @@ export const RoleProtectedRoute = ({
 
         if (!accounts || accounts.length === 0) {
           setStage("needsConnection");
+
           return;
         }
 
@@ -169,11 +178,13 @@ export const RoleProtectedRoute = ({
           setErrorMessage(
             "Multiple MetaMask accounts are connected to this site. Disconnect & reconnect, selecting exactly ONE account.",
           );
+
           return;
         }
 
         if (forceReconnect) {
           setStage("needsReconnect");
+
           return;
         }
 
@@ -191,6 +202,7 @@ export const RoleProtectedRoute = ({
       if (!accounts || accounts.length === 0) {
         setStage("needsConnection");
         navigate("/");
+
         return;
       }
       void checkRole();
@@ -207,7 +219,10 @@ export const RoleProtectedRoute = ({
 
     return () => {
       if (window.ethereum) {
-        window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+        window.ethereum.removeListener(
+          "accountsChanged",
+          handleAccountsChanged,
+        );
         window.ethereum.removeListener("chainChanged", handleChainChanged);
       }
     };
@@ -218,13 +233,15 @@ export const RoleProtectedRoute = ({
   return (
     <div className="flex items-center justify-center h-screen">
       <div className="flex flex-col items-center gap-4">
-        <div className="text-xl font-bold">Connecting to Wallet & Verifying Access...</div>
+        <div className="text-xl font-bold">
+          Connecting to Wallet & Verifying Access...
+        </div>
 
         {stage === "needsConnection" ? (
           <button
             className="px-4 py-2 rounded-lg bg-primary text-white font-semibold"
-            onClick={() => void connectAndCheck()}
             type="button"
+            onClick={() => void connectAndCheck()}
           >
             Connect MetaMask
           </button>
@@ -233,8 +250,8 @@ export const RoleProtectedRoute = ({
         {stage === "needsReconnect" ? (
           <button
             className="px-4 py-2 rounded-lg bg-primary text-white font-semibold"
-            onClick={() => void connectAndCheck()}
             type="button"
+            onClick={() => void connectAndCheck()}
           >
             Disconnect & Reconnect MetaMask
           </button>

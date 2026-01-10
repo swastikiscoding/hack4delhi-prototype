@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+
 import { api, authHeaders } from "@/lib/api";
 
 interface Voter {
@@ -44,7 +45,10 @@ export const useVoterStore = create<VoterState>()(
       login: async (epicId, password) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.post("/voters/login", { epicId, password });
+          const response = await api.post("/voters/login", {
+            epicId,
+            password,
+          });
 
           const { user, accessToken } = response.data.data;
 

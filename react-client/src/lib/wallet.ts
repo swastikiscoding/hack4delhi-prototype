@@ -38,6 +38,7 @@ export const ensureSepolia = async () => {
   };
 
   const chainIdHex = await getChainIdHex();
+
   if (chainIdHex?.toLowerCase() === SEPOLIA_CHAIN_ID_HEX) return;
 
   await window.ethereum.request({
@@ -47,6 +48,7 @@ export const ensureSepolia = async () => {
 
   for (let attempt = 0; attempt < 20; attempt++) {
     const newChainIdHex = await getChainIdHex();
+
     if (newChainIdHex?.toLowerCase() === SEPOLIA_CHAIN_ID_HEX) return;
     await sleep(150);
   }
@@ -58,11 +60,13 @@ export const getBrowserProvider = async () => {
   requireMetaMask();
   await ensureConnectedAccount();
   await ensureSepolia();
+
   return new ethers.BrowserProvider(window.ethereum);
 };
 
 export const getSignerAddress = async () => {
   const provider = await getBrowserProvider();
   const signer = await provider.getSigner();
+
   return signer.getAddress();
 };
