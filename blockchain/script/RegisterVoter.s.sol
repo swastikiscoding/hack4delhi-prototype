@@ -1,23 +1,24 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.30;
 
 import "forge-std/Script.sol";
 import "../src/UnifiedElectoralRoll.sol";
 
 contract RegisterVoter is Script {
     function run() external {
-        // Load deployed contract address
-        address rollAddress = vm.envAddress("UER_ADDRESS");
-        UnifiedElectoralRoll roll = UnifiedElectoralRoll(rollAddress);
+        address uer = vm.envAddress("UER_ADDRESS");
+        uint256 eroPk = vm.envUint("PRIVATE_KEY_ERO");
 
-        // Example EPIC hash (same logic frontend will use)
-        bytes32 epicHash = keccak256("EPIC-INDIA-002");
+        bytes32 epicHash = keccak256("RQZ1655331");
 
-        uint256 stateCode = 1;
-        uint256 constituencyCode = 102;
+        vm.startBroadcast(eroPk);
 
-        vm.startBroadcast();
-        roll.registerVoter(epicHash, stateCode, constituencyCode);
+        UnifiedElectoralRoll(uer).registerVoter(
+            epicHash,
+            29, // Rajasthan
+            62  // Behror
+        );
+
         vm.stopBroadcast();
     }
 }
